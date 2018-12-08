@@ -1,15 +1,7 @@
-import pytest
-from maya_mock import MockedSession, MockedPymelSession
-
-
-@pytest.fixture
-def session():
-    return MockedSession()
-
-
-@pytest.fixture
-def pymel(session):
-    return MockedPymelSession(session)
+# coding: utf-8
+"""
+Unit-tests for maya_mock pymel implementation.
+"""
 
 
 def test_createNode(pymel):
