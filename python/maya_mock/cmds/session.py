@@ -28,7 +28,6 @@ class MockedCmdsSession(object):
         :rtype: MockedSession
         """
         return self._session
-
     def addAttr(self, *objects, **kwargs):
         """ Create an attribute
         https://download.autodesk.com/us/maya/2011help/CommandsPython/addAttr.html
@@ -65,21 +64,23 @@ class MockedCmdsSession(object):
 
         :return:
         """
-        # Retreive the attribute name.
+        # Retrieve the attribute name.
         longName = kwargs.get('longName')
         shortName = kwargs.get('shortName')
         if not longName and not shortName:
             raise RuntimeError("New attribute needs either a long (-ln) or short (-sn) attribute name.")
+
+        default = kwargs.get('defaultValue', 0.0)
 
         # todo: fix this
         name = longName if longName else shortName
 
         for object in objects:
             node = self.session.get_node_by_match(object)
-            self.session.create_port(node, name)
+            self.session.create_port(node, name, value=default)
 
-    def _select(self, node):
-        node.selected = True
+    def allNodeTypes(self, **kwargs):
+        raise NotImplementedError
 
     def createNode(self, _type, name=None, parent=None, shared=None, skipSelect=None):
         """
@@ -103,9 +104,58 @@ class MockedCmdsSession(object):
 
         return name
 
+    def connectionInfo(self, dagpath, sourceFromDestination=False, destinationFromSource=False):
+        port = self.session.get_port_by_match(dagpath)
+        if sourceFromDestination:
+            return next((connection.src.__melobject__() for connection in self.session.get_port_input_connections(port)), '')
+        if destinationFromSource:
+            return [connection.dst.__melobject__() for connection in self.session.get_port_output_connections(port)]
+
     def delete(self, name):
         node = self.session.get_node_by_name(name)
         self.session.remove_node(node)
+
+    def getAttr(self, dagpath):
+        port = self.session.get_port_by_match(dagpath)
+        return port.value
+
+    def listAttr(self, objects):
+        """
+        https://download.autodesk.com/us/maya/2011help/CommandsPython/listAttr.html
+        param bool array:
+        param bool caching:
+        param bool changedSinceFileOpen:
+        param bool channelBox:
+        param bool connectable:
+        param bool hasData:
+        param bool hasNullData:
+        param bool keyable:
+        param bool leaf:
+        param bool locked:
+        param bool multi:
+        param bool output:
+        param bool ramp:
+        param bool read:
+        param bool readOnly:
+        param bool scalar:
+        param bool scalarAndArray:
+        param bool settable:
+        param bool shortNames:
+        param string: string],
+        param bool unlocked:
+        param bool usedAsFilename:
+        param bool userDefined:
+        param bool visible:
+        param bool write:
+        :return:
+        """
+
+        def _iter():
+            for object in self.session.nodes:
+                for port in object.ports:
+                    yield port
+
+        return [port.name for port in _iter()]
 
     def ls(self, pattern=None, fullPath=False, selection=False, **kwargs):  # TODO: Verify symbol name?
         """
@@ -216,45 +266,7 @@ class MockedCmdsSession(object):
         else:
             nodes = self.session.nodes
 
-        return sorted([_get(node) for node in nodes if node._match(pattern)])  # TODO: Do we really want sorted?
-
-    def listAttr(self, objects):
-        """
-        https://download.autodesk.com/us/maya/2011help/CommandsPython/listAttr.html
-        param bool array:
-        param bool caching:
-        param bool changedSinceFileOpen:
-        param bool channelBox:
-        param bool connectable:
-        param bool hasData:
-        param bool hasNullData:
-        param bool keyable:
-        param bool leaf:
-        param bool locked:
-        param bool multi:
-        param bool output:
-        param bool ramp:
-        param bool read:
-        param bool readOnly:
-        param bool scalar:
-        param bool scalarAndArray:
-        param bool settable:
-        param bool shortNames:
-        param string: string],
-        param bool unlocked:
-        param bool usedAsFilename:
-        param bool userDefined:
-        param bool visible:
-        param bool write:
-        :return:
-        """
-
-        def _iter():
-            for object in self.session.nodes:
-                for port in object.ports:
-                    yield port
-
-        return [port.name for port in _iter()]
+        return sorted([_get(node) for node in nodes if node.match(pattern)])  # TODO: Do we really want sorted?
 
     def nodeType(self, name):
         """
@@ -271,7 +283,7 @@ class MockedCmdsSession(object):
         return node.type
 
     def objExists(self, pattern):
-        return self.session.exists(pattern)
+        return self.session.node_exist(pattern) or bool(self.session.get_port_by_match(pattern))
 
     def select(self, names):
         def _find_node(node):
@@ -280,6 +292,10 @@ class MockedCmdsSession(object):
                     yield n
 
         self.session.selection = [y for name in names for y in _find_node(name)]
+
+    def setAttr(self, dagpath, value):
+        port = self.session.get_port_by_match(dagpath)
+        port.value = value
 
     def parent(self, *dag_objects, **kwargs):
         """
@@ -322,6 +338,13 @@ class MockedCmdsSession(object):
         port_src = self.session.get_port_by_match(src)
         port_dst = self.session.get_port_by_match(dst)
         # todo: what if connection already exist?
+
+        for connection in self.session.connections:
+            if connection.src is port_src and connection.dst is port_dst:
+                # This also raise this warning to the script editor:
+                # Warning: 'transform1.translateX' is already connected to 'transform1.translateY'.
+                raise RuntimeError('Maya command error')
+
         self.session.create_connection(port_src, port_dst)
 
     def disconnectAttr(self, src, dst, nextAvailable=False):
@@ -336,4 +359,10 @@ class MockedCmdsSession(object):
         port_src = self.session.get_port_by_match(src)
         port_dst = self.session.get_port_by_match(dst)
         connection = self.session.get_connection_by_ports(port_src, port_dst)
+
+        if not connection:
+            raise RuntimeError(u"There is no connection from '{}' to '{}' to disconnect".format(
+                port_src.__melobject__(), port_dst.__melobject__(),
+            ))
+
         self.session.remove_connection(connection)

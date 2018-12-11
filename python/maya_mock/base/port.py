@@ -44,6 +44,9 @@ class MockedPort(object):
     def __repr__(self):
         return '<Mocked Port "{}.{}">'.format(self.node.name, self.name)
 
+    def __melobject__(self):
+        return '{}.{}'.format(self.node.__melobject__(), self.name)
+
     @property
     def type(self):
         """
@@ -51,7 +54,7 @@ class MockedPort(object):
         """
         return self._type
 
-    def _match(self, pattern):
+    def match(self, pattern):
         """
         Check if the node match a certain pattern.
         The pattern can be a fully qualified dagpath or a name.

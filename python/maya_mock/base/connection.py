@@ -1,9 +1,13 @@
 class MockedConnection(object):
     """
-    Pymel.Attribute mock.
+    Mock a maya connection.
     """
 
     def __init__(self, port_src, port_dst):
+        """
+        :param maya_mock.MockedPort port_src: The connection source port.
+        :param maya_mock.MockedPort port_dst: The connection destination port.
+        """
         super(MockedConnection, self).__init__()
         self._port_src = port_src
         self._port_dst = port_dst
@@ -24,6 +28,7 @@ class MockedConnection(object):
     def src(self):
         """
         :return: This connection source port.
+        :rtype: maya_mock.MockedPort
         """
         return self._port_src
 
@@ -31,5 +36,6 @@ class MockedConnection(object):
     def dst(self):
         """
         :return: The connection destination port.
+        :rtype: maya_mock.MockedPort
         """
         return self._port_dst

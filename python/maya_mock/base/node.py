@@ -34,11 +34,11 @@ class MockedNode(object):
         :rtype: str
         """
         registry = self._session
-        if any(n.name == self.name for n in registry.nodes if n != self):
+        if any(True for node in registry.nodes if node != self and node.name == self.name):
             return self.dagpath
         return self.name
 
-    def _match(self, pattern):
+    def match(self, pattern):
         """
         Check if the node match a certain pattern.
         The pattern can be a fully qualified dagpath or a name.

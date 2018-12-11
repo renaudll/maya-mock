@@ -36,13 +36,13 @@ class MockedSession(object):
 
     # --- Public methods
 
-    def exists(self, dagpath):
+    def node_exist(self, dagpath):
         return bool(self.get_node_by_match(dagpath, strict=False))
 
     def _unique_name(self, prefix):
         for i in itertools.count(1):
             name = "{}{}".format(prefix, i)
-            if not self.exists(name):
+            if not self.node_exist(name):
                 return name
 
     def get_node_by_name(self, name):
@@ -53,7 +53,7 @@ class MockedSession(object):
 
     def get_node_by_match(self, pattern, strict=True):
         for node in self.nodes:
-            if node._match(pattern):
+            if node.match(pattern):
                 return node
         if strict:
             raise ValueError("No object matches name: {}".format(pattern))
@@ -61,7 +61,7 @@ class MockedSession(object):
 
     def get_port_by_match(self, pattern):
         for port in self.ports:
-            if port._match(pattern):
+            if port.match(pattern):
                 return port
         return None
 
@@ -87,7 +87,7 @@ class MockedSession(object):
         :rtype: MockedNode
         """
         # TODO: cmds.createNode("locator") -> "locatorShape"
-        if name and not self.exists(name):
+        if name and not self.node_exist(name):
             pass
         else:
             prefix = name if name else node_type
@@ -258,7 +258,7 @@ class MockedSession(object):
         :return: A set of mocked connections
         :rtype: Set[MockedConnection]
         """
-        return {connection for connection in self.connections if connection.dst is port}
+        return {connection for connection in self.connections if connection.src is port}
 
     def get_port_inputs(self, port):
         """
