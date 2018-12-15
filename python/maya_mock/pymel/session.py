@@ -47,12 +47,6 @@ class MockedPymelSession(MockedCmdsSession):
     def __callback_port_removed(self, port):
         self._registry.pop(port, None)
 
-    def _attribute(self, args):
-        """
-        Create a mock of pymel.Attribute
-        """
-        return MockedPymelPort(self, args)
-
     def _str_to_pynode(self, val):
         """
         Convert a string to a registered MockedPymelNode instance.

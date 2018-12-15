@@ -31,6 +31,13 @@ def test_createNode_name_multi(cmds):
     assert cmds.objExists('foo2')
 
 
+def test_delete(cmds):
+    """ Validate that we can delete a node using the `delete` function."""
+    cmds.createNode("transform")
+    cmds.delete("transform1")
+    assert not cmds.objExists("transform1")
+
+
 def test_selection_empty_by_defaut(cmds):
     """ Validate that we the selection is empty by default."""
     assert cmds.ls(selection=True) == []
@@ -40,6 +47,13 @@ def test_selection_on_node_creationg(cmds):
     """ Validate that when a node is created it is automatically selected."""
     cmds.createNode("transform", name="foo")
     assert cmds.ls(selection=True) == ['foo']
+
+
+def test_createNode_skipSelect(cmds):
+    """Validate that when creating node using the `skipSelect` kwarg, the selected don't change."""
+    cmds.createNode("transform", name='a')
+    cmds.createNode("transform", name='b', skipSelect=True)
+    assert cmds.ls(selection=True) == ['a']
 
 
 def test_select_clear(cmds):

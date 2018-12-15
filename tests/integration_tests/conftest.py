@@ -9,7 +9,7 @@ def init_maya():
     """
     Initialise a standalone Maya session
     """
-    from maya import cmds, standalone
+    from maya import standalone
 
     standalone.initialize()
 
@@ -33,9 +33,6 @@ def maya_session(maya_cmds):
 def maya_cmds():
     """
     Default maya.cmds module
-
-    :return: The maya.cmds module
-    :rtype: object
     """
     from maya import cmds
     return cmds
@@ -45,9 +42,6 @@ def maya_cmds():
 def maya_pymel():
     """
     Default pymel module
-
-    :return: The pymel module
-    :rtype object
     """
     import pymel.core as pymel
     return pymel

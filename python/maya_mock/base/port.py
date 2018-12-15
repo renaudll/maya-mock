@@ -22,6 +22,17 @@ class MockedPort(object):
         :param interesting:
         """
         super(MockedPort, self).__init__()
+
+        # Ensure provided name is unicode
+        if type(name) is str:
+            name = unicode(name)
+
+        if type(short_name) is str:
+            short_name = unicode(short_name)
+
+        if type(nice_name) is str:
+            nice_name = unicode(nice_name)
+
         self.node = node
         self.name = name
         self.short_name = short_name or name

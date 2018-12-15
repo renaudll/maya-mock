@@ -65,19 +65,19 @@ class MockedCmdsSession(object):
         :return:
         """
         # Retrieve the attribute name.
-        longName = kwargs.get('longName')
-        shortName = kwargs.get('shortName')
-        if not longName and not shortName:
+        name_long = kwargs.get('longName')
+        name_short = kwargs.get('shortName')
+        if not name_long and not name_short:
             raise RuntimeError("New attribute needs either a long (-ln) or short (-sn) attribute name.")
 
         default = kwargs.get('defaultValue', 0.0)
 
         # todo: fix this
-        name = longName if longName else shortName
+        name = name_long if name_long else name_short
 
         for object in objects:
             node = self.session.get_node_by_match(object)
-            self.session.create_port(node, name, value=default)
+            self.session.create_port(node, name, short_name=name_short, value=default)
 
     def allNodeTypes(self, **kwargs):
         raise NotImplementedError

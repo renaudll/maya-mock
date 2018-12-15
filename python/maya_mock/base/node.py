@@ -4,11 +4,16 @@ class MockedNode(object):
     """
     A mocked Maya node
     """
-    def __init__(self, session, nodetype, name):
+    def __init__(self, session, node_type, name):
         super(MockedNode, self).__init__()
+
+        # Ensure name is unicode
+        if type(name) is str:
+            name = unicode(name)
+
         self._session = session
         self.name = name
-        self.nodetype = nodetype
+        self.type = node_type
         self._parent = None
         self.ports = set()  # internal REGISTRY_DEFAULT of ports associated with the node
         self.children = set()

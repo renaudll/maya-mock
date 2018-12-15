@@ -7,8 +7,11 @@ class MockedPymelNode(object):
         self._node = node
         self.selected = False
 
+    def __str__(self):
+        return self.__melobject__()
+
     def __repr__(self):
-        return '<Mocked pymel.PyNode "{0}">'.format(self._node.dagpath)
+        return "nt.%s(%r)" % (self._node.type.title(), self._node.name)
 
     def __getattr__(self, item):
         """

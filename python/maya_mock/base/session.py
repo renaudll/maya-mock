@@ -32,7 +32,7 @@ class MockedSession(object):
         self.connections = set()
         self.selection = set()
         self.ports_by_node = defaultdict(set)
-        self.presets = preset
+        self.schema = preset
 
     # --- Public methods
 
@@ -103,10 +103,10 @@ class MockedSession(object):
             signal.emit(node)
 
         # Add port from configuration if needed
-        if self.presets:
-            preset = self.presets.get(node_type)
-            if preset:
-                preset.apply(self, node)
+        if self.schema:
+            node_def = self.schema.get(node_type)
+            if node_def:
+                node_def.apply(self, node)
 
         return node
 

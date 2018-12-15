@@ -30,6 +30,7 @@ class EnumAttrTypes(Enum):
     float3 = 'float3'
     double2 = 'double2'
     double3 = 'double3'
+    double4 = 'double4'
     long2 = 'long2'
     long3 = 'long3'
     short2 = 'short2'
@@ -42,3 +43,8 @@ class EnumAttrTypes(Enum):
     mesh = 'mesh'
     lattice = 'lattice'
     pointArray = 'pointArray'
+
+    # The types bellow are returned when generating a SessionSchema
+    # We don't know why they exist and don't really want them.
+    typed = 'typed'
+    generic = 'generic'
