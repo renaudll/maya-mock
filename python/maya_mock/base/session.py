@@ -215,7 +215,7 @@ class MockedSession(object):
         assert (isinstance(node, MockedNode))
         assert (isinstance(name, basestring))
 
-        for port in self.ports_by_node.get(node):
+        for port in self.ports_by_node.get(node, ()):
             if port.name == name:
                 return port
             elif port.short_name == name:

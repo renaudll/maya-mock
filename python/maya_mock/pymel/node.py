@@ -3,7 +3,7 @@
 class MockedPymelNode(object):
     def __init__(self, pymel, node):
         self.__pymel = pymel
-        self.__session = pymel
+        self.__session = pymel.session
         self._node = node
         self.selected = False
 
@@ -37,8 +37,14 @@ class MockedPymelNode(object):
         port = session.get_node_port_by_name(self._node, name)
         return pymel._port_to_attribute(port)
 
+    def getAttr(self, name):
+        session = self.__session
+        port = session.get_node_port_by_name(self._node, name)
+        return port.value
+
     def hasAttr(self, name):
-        return self.__session.get_node_port_by_name(self._node, name) is not None
+        session = self.__session
+        return session.get_node_port_by_name(self._node, name) is not None
 
     def name(self):
         return self._node.name
@@ -50,21 +56,19 @@ class MockedPymelNode(object):
         return self._node.dagpath
 
     def getParent(self):
-        session = self.__session
+        pymel = self.__pymel
         parent = self._node.parent
         if parent is None:
             return None
-        return session._node_to_pynode(parent)
-
-    def _expand(self, node):
-        try:
-            return node.__melobject__()
-        except AttributeError:
-            return node
+        return pymel._node_to_pynode(parent)
 
     def setParent(self, *args, **kwargs):
-        session = self.__session
-        session.parent(self, *args, **kwargs)
+        pymel = self.__pymel
+        pymel.parent(self, *args, **kwargs)
 
     def getChildren(self):
-        raise NotImplementedError
+        session = self.__session
+        pymel = self.__pymel
+        parent = self._node
+        # TODO: Does ordering matter?
+        return [pymel._node_to_pynode(node) for node in session.nodes if node.parent is parent]

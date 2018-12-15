@@ -16,8 +16,9 @@ def init_maya():
     yield
 
     # Starting Maya 2016, we have to call uninitialize
-    if float(cmds.about(v=True)) >= 2016.0:
-        standalone.uninitialize()
+    # Commented out for performance reasons
+    # if float(cmds.about(v=True)) >= 2016.0:
+    #     standalone.uninitialize()
 
 
 @pytest.fixture(autouse=True)

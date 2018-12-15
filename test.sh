@@ -18,11 +18,11 @@ PYTHONPATH="${PYTHONPATH}:${_PYTEST_DIR}"
 echo "########################################################################"
 echo "# Running unit tests"
 
-#py.test tests/unit_tests --cov=maya_mock --cov-branch --cov-report term-missing $@
+(cd "tests/unit_tests" && py.test $@ --cov=maya_mock --cov-branch --cov-report term-missing)
 
 # Run integation tests
 echo "########################################################################"
 echo "# Running integration tests"
 
 echo "mayapy: $(which mayapy)"
-mayapy -m "py.test" "tests/integration_tests" --cov=maya_mock --cov-branch --cov-report term-missing $@
+(cd "tests/integration_tests" && mayapy -m "py.test" $@ --cov=maya_mock --cov-branch --cov-report term-missing)

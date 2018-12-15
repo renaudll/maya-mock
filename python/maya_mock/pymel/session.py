@@ -19,6 +19,12 @@ class MockedPymelSession(MockedCmdsSession):
 
         self._registry = {}
 
+        # pymel.core.PyNode
+        self.PyNode = MockedPymelNode
+
+        # pymel.core.Attribute
+        self.Attribute = MockedPymelPort
+
     def __callback_node_added(self, node):
         """
         Called when a node is added in the scene.
@@ -99,7 +105,7 @@ class MockedPymelSession(MockedCmdsSession):
 
     def objExists(self, args):
         names = [str(arg) for arg in args]
-        return self.session.exists(names)
+        return self.session.node_exist(names)
 
     def createNode(self, *args, **kwargs):
         node = super(MockedPymelSession, self).createNode(*args, **kwargs)

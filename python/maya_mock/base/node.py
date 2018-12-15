@@ -19,8 +19,11 @@ class MockedNode(object):
     def __ne__(self, other):
         return hash(self) != hash(other)
 
-    def __hash__(self):
-        return hash(self.dagpath)
+    # Note: We can't use the dagpath as the hash source since it can change.
+    # This might prevent us from accessing a MockedNode that was stored in a dict
+    # before it was re-parented.
+    # def __hash__(self):
+    #     return hash(self.dagpath)
 
     def __repr__(self):
         return '<Mocked Node "{}">'.format(self.dagpath)
