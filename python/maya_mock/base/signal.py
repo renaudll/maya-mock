@@ -1,8 +1,8 @@
 import logging
 import threading
 
-log = logging.getLogger(__name__)
-log.setLevel(logging.INFO)
+LOG = logging.getLogger(__name__)
+LOG.setLevel(logging.INFO)
 
 # TODO: Replace with https://github.com/dgovil/PySignal ?
 # TODO: Implement __str__ that query sender?
@@ -32,7 +32,7 @@ class Signal(object):
 
         :param object func: A callable object to connect to the signal.
         """
-        log.debug("Connecting %s to Signal %s", func.__name__, self)
+        LOG.debug("Connecting %s to Signal %s", func.__name__, self)
         self._funcs.add(func)
 
     def disconnect(self, func):
@@ -41,7 +41,7 @@ class Signal(object):
 
         :param object func: A callable object to disconnect from the signal.
         """
-        log.debug("Disconnecting %s from Signal %s", func.__name__, self)
+        LOG.debug("Disconnecting %s from Signal %s", func.__name__, self)
         self._funcs.remove(func)
 
     def emit(self, *args, **kwargs):
@@ -52,15 +52,15 @@ class Signal(object):
         :param object kwargs: Any arguments will be forwarded to the registered callable.
         """
         if self._block:
-            log.debug("Skipping emit since block is True.")
+            LOG.debug("Skipping emit since block is True.")
             return
 
-        log.debug("Signal %s emitted", self)
+        LOG.debug("Signal %s emitted", self)
         self._mutex.acquire()
         self.block(True)
         try:
             for func in self._funcs:
-                log.debug(" Calling %s.%s", func.im_class.__name__, func.im_func.__name__)
+                LOG.debug(" Calling %s.%s", func.im_class.__name__, func.im_func.__name__)
                 func(*args, **kwargs)
         finally:
             self._mutex.release()

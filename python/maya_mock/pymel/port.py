@@ -1,6 +1,12 @@
+"""Mock for pymel.core.Attribute"""
+
+
 class MockedPymelPort(object):
     """
     Port adaptor for a pymel.Attribute object.
+
+    Original documentation:
+    https://help.autodesk.com/cloudhelp/2018/CHS/Maya-Tech-Docs/PyMel/generated/classes/pymel.core.general/pymel.core.general.Attribute.html#pymel.core.general.Attribute
     """
 
     def __init__(self, session, port):
@@ -21,6 +27,10 @@ class MockedPymelPort(object):
         return u'{}.{}'.format(self._port.node.__melobject__(), self._port.name)
 
     def name(self):
+        """
+        :return: The name of the attribute (plug)
+        :rtype: str
+        """
         return self.__melobject__()
 
     def longName(self):

@@ -15,6 +15,9 @@ cpp/build/*
 .coverage
 .coveragerc
 
+# hypothesis
+.hypothesis/
+
 # Xcode
 *.pbxuser
 *.mode1v3

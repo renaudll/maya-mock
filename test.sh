@@ -15,14 +15,4 @@ echo "[setup] Adding to PYTHONPATH: ${_PYTEST_DIR}"
 PYTHONPATH="${PYTHONPATH}:${_PYTEST_DIR}"
 
 # Run unit tests
-echo "########################################################################"
-echo "# Running unit tests"
-
-(cd "tests/unit_tests" && py.test $@ --cov=maya_mock --cov-branch --cov-report term-missing)
-
-# Run integation tests
-echo "########################################################################"
-echo "# Running integration tests"
-
-echo "mayapy: $(which mayapy)"
-(cd "tests/integration_tests" && mayapy -m "py.test" $@ --cov=maya_mock --cov-branch --cov-report term-missing)
+mayapy -m "py.test" $@ --cov=maya_mock --cov-branch --cov-report term-missing

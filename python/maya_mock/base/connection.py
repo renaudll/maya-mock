@@ -1,6 +1,9 @@
+"""A mocked Maya connection"""
+
+
 class MockedConnection(object):
     """
-    Mock a maya connection.
+    A mocked Maya connection.
     """
 
     def __init__(self, port_src, port_dst):

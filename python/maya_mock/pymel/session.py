@@ -1,3 +1,4 @@
+"""Mocked for the pymel package."""
 from maya_mock.cmds.session import MockedCmdsSession
 from maya_mock.pymel.node import MockedPymelNode
 from maya_mock.pymel.port import MockedPymelPort
@@ -12,10 +13,10 @@ class MockedPymelSession(MockedCmdsSession):
     def __init__(self, session):
         super(MockedPymelSession, self).__init__(session)
 
-        self.session.nodeAdded.connect(self.__callback_node_added)
-        self.session.nodeRemoved.connect(self.__callback_node_removed)
-        self.session.portAdded.connect(self.__callback_port_added)
-        self.session.portRemoved.connect(self.__callback_port_removed)
+        self.session.onNodeAdded.connect(self.__callback_node_added)
+        self.session.onNodeRemoved.connect(self.__callback_node_removed)
+        self.session.onPortAdded.connect(self.__callback_port_added)
+        self.session.onPortRemoved.connect(self.__callback_port_removed)
 
         self._registry = {}
 
@@ -24,6 +25,14 @@ class MockedPymelSession(MockedCmdsSession):
 
         # pymel.core.Attribute
         self.Attribute = MockedPymelPort
+
+        # Register all existing node
+        for node in session.nodes:
+            self.__callback_node_added(node)
+
+        # Register all existing port
+        for port in session.ports:
+            self.__callback_port_added(port)
 
     def __callback_node_added(self, node):
         """

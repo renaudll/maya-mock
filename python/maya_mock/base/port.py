@@ -1,13 +1,16 @@
-from maya_mock.constants import EnumAttrTypes
+"""A mocked Maya port"""
+import fnmatch
+
+from maya_mock.base.constants import EnumAttrTypes
 
 
 class MockedPort(object):
     """
-    Pymel.Attribute mock.
+    A mocked Maya port.
     """
 
     def __init__(self, node, name, port_type='long', short_name=None, nice_name=None, value=0,
-                 readable=True, writable=True, interesting=True):
+                 readable=True, writable=True, interesting=True, user_defined=True, parent=None):
         """
         Create a Maya port mock.
 
@@ -20,6 +23,9 @@ class MockedPort(object):
         :param readable: 1
         :param writable:
         :param interesting:
+        :param bool user_defined: True if the port is not standard for this type of node. False otherwise.
+        :param parent: An optional parent to the attribute. Parent need to exist.
+        :type parent: str or None
         """
         super(MockedPort, self).__init__()
 
@@ -42,6 +48,8 @@ class MockedPort(object):
         self.readable = readable
         self.writable = writable
         self.interesting = interesting
+        self.user_defined = user_defined
+        self.parent = parent
 
     def __eq__(self, other):
         return hash(self) == hash(other)
@@ -70,16 +78,30 @@ class MockedPort(object):
         Check if the node match a certain pattern.
         The pattern can be a fully qualified dagpath or a name.
 
-        - "child"
-        - "child*"
+        - "child.foo"
+        - "child*.foo"
         - "|child"
 
         :param pattern:
         :return:
         """
-        if not pattern:
+        # No pattern always match
+        if pattern is None:
             return True
-        return pattern in self.dagpath
+
+        # Match fully qualified dagpath
+        # TODO: Make more solid
+        dagpath = self.dagpath
+        if dagpath == '|' + pattern:
+            return True
+
+        node_name, port_name = dagpath.split('.')
+
+        # Match attribute name
+        if port_name == pattern or fnmatch.fnmatch(port_name, pattern):
+            return True
+
+        return False
 
     @property
     def dagpath(self):

@@ -1,3 +1,4 @@
+# pylint: disable=invalid-name
 from enum import Enum
 
 from maya_mock.base.session import MockedSession
@@ -12,6 +13,9 @@ class EnumTypes(Enum):
 class MockedCmdsSession(object):
     """
     Mock for the maya.cmds python module
+
+    Original documentation:
+    https://download.autodesk.com/us/maya/2011help/Commands/ls.html
 
     :param MockedSession session: The mocked session for this adaptor.
     """
@@ -28,9 +32,9 @@ class MockedCmdsSession(object):
         :rtype: MockedSession
         """
         return self._session
+
     def addAttr(self, *objects, **kwargs):
         """ Create an attribute
-        https://download.autodesk.com/us/maya/2011help/CommandsPython/addAttr.html
 
         :param string attributeType:
         :param string binaryTag:
@@ -61,8 +65,6 @@ class MockedCmdsSession(object):
         :param boolean storable:
         :param boolean usedAsColor:
         :param boolean writable:
-
-        :return:
         """
         # Retrieve the attribute name.
         name_long = kwargs.get('longName')
@@ -80,6 +82,12 @@ class MockedCmdsSession(object):
             self.session.create_port(node, name, short_name=name_short, value=default)
 
     def allNodeTypes(self, **kwargs):
+        """
+        This command returns a list containing the type names of every kind of creatable node registered with the system.
+        Note that some node types are abstract and cannot be created. These will not show up on this list.
+        (e.g. transform and polyShape both inherit from dagObject,
+        but dagObject cannot be created directly so it will not appear on this list.)
+        """
         raise NotImplementedError
 
     def createNode(self, _type, name=None, parent=None, shared=None, skipSelect=None):
@@ -87,7 +95,9 @@ class MockedCmdsSession(object):
         maya.cmds.createNode mock
         https://knowledge.autodesk.com/search-result/caas/CloudHelp/cloudhelp/2018/ENU/Maya-Tech-Docs/CommandsPython/createNode-html.html
 
-        :param name: Sets the name of the newly-created node. If it contains namespace path, the new node will be created under the specified namespace; if the namespace doesn't exist, we will create the namespace.
+        :param name: Sets the name of the newly-created node.
+        If it contains namespace path, the new node will be created under the specified namespace;
+        if the namespace doesn't exist, we will create the namespace.
         :param parent: Specifies the parent in the DAG under which the new node belongs.
         :param shared: This node is shared across multiple files, so only create it if it does not already exist.
         :param skipSelect: This node is not to be selected after creation, the original selection will be preserved.
@@ -95,7 +105,8 @@ class MockedCmdsSession(object):
         :return: A mocked node
         :rtype: Mock
         """
-        node = self.session.create_node(_type, name=name)
+        parent = self.session.get_node_by_match(parent) if parent else None
+        node = self.session.create_node(_type, name=name, parent=parent)
         name = node.__melobject__()
 
         # Select the new node except if -skipSelect
@@ -105,23 +116,49 @@ class MockedCmdsSession(object):
         return name
 
     def connectionInfo(self, dagpath, sourceFromDestination=False, destinationFromSource=False):
+        """
+        Get information about connection sources and destinations.
+        Unlike the isConnected command, this command needs only one end of the connection.
+        see: https://help.autodesk.com/cloudhelp/2017/ENU/Maya-Tech-Docs/Commands/connectionInfo.html
+
+        :param dagpath:
+        :param sourceFromDestination:
+        :param destinationFromSource:
+        :return: A boolean when asking for a property, depending on the flags used.
+        A string when asking for a plug name.
+        A string list When asking for a list of plugs.
+        :rtype bool or str or list(str)
+        """
         port = self.session.get_port_by_match(dagpath)
         if sourceFromDestination:
-            return next((connection.src.__melobject__() for connection in self.session.get_port_input_connections(port)), '')
+            return next(
+                (connection.src.__melobject__() for connection in self.session.get_port_input_connections(port)), '')
         if destinationFromSource:
             return [connection.dst.__melobject__() for connection in self.session.get_port_output_connections(port)]
 
     def delete(self, name):
+        """
+        This command is used to delete selected objects, or all objects, or objects specified along with the command.
+        Flags are available to filter the type of objects that the command acts on.
+
+        :param str name: A pattern defining what to delete.
+        """
         node = self.session.get_node_by_name(name)
         self.session.remove_node(node)
 
     def getAttr(self, dagpath):
+        """
+        Get the value associated with an attribute.
+
+        :param str dagpath: A dagpath to an attribute.
+        :return: The value associated with that attribute.
+        :rtype: bool
+        """
         port = self.session.get_port_by_match(dagpath)
         return port.value
 
-    def listAttr(self, objects):
+    def listAttr(self, *objects, **kwargs):
         """
-        https://download.autodesk.com/us/maya/2011help/CommandsPython/listAttr.html
         param bool array:
         param bool caching:
         param bool changedSinceFileOpen:
@@ -149,19 +186,20 @@ class MockedCmdsSession(object):
         param bool write:
         :return:
         """
+        userDefined = kwargs.get('userDefined', False)
 
-        def _iter():
-            for object in self.session.nodes:
-                for port in object.ports:
-                    yield port
+        def _filter_port(port):
+            if userDefined and not port.user_defined:
+                return False
+            return True
 
-        return [port.name for port in _iter()]
+        nodes = {node for object_ in objects for node in self.session.get_nodes_by_match(object_)}
+        ports = (port for node in nodes for port in self.session.ports_by_node.get(node, {}))
+        ports = filter(_filter_port, ports)
+        return [port.name for port in ports]
 
-    def ls(self, pattern=None, fullPath=False, selection=False, **kwargs):  # TODO: Verify symbol name?
+    def ls(self, pattern=None, long=False, selection=False, type=None, **kwargs):  # TODO: Verify symbol name?
         """
-        ls
-        https://download.autodesk.com/us/maya/2011help/Commands/ls.html
-
         :param absoluteName: (-an) This flag can be used in conjunction with the showNamespace flag to specify that the
         namespace(s) returned by the command be in absolute namespace format. The absolute name of the namespace is a
         full namespace path, starting from the root namespace ":" and including all parent namespaces.
@@ -255,18 +293,28 @@ class MockedCmdsSession(object):
         :return:
         """
 
+        def _filter(node):
+            """
+            Determine if a node can be yield.
+            :param MockedNode n: The node to check.
+            :return: True if the node can be yield, False otherwise.
+            :rtype: bool
+            """
+            if selection and node not in self.session.selection:
+                return False
+            if type and node.type != type:
+                return False
+            return True
+
         def _get(n):
-            if fullPath:
+            if long:
                 return n.dagpath
             else:
                 return n.__melobject__()
 
-        if selection:
-            nodes = self.session.selection
-        else:
-            nodes = self.session.nodes
-
-        return sorted([_get(node) for node in nodes if node.match(pattern)])  # TODO: Do we really want sorted?
+        nodes = [node for node in self.session.iter_node_by_match(pattern) if _filter(node)]
+        # nodes = [node for node in self.session.nodes if node.match(pattern) if _filter(node)]
+        return [_get(node) for node in sorted(nodes)]
 
     def nodeType(self, name):
         """
@@ -283,9 +331,23 @@ class MockedCmdsSession(object):
         return node.type
 
     def objExists(self, pattern):
+        """
+        Determine if an object exist.
+        see: https://download.autodesk.com/us/maya/2009help/CommandsPython/objExists.html
+
+        :param str pattern: The pattern to check.
+        :return: True if an existing object match the provided pattern, False otherwise.
+        :rtype: bool
+        """
         return self.session.node_exist(pattern) or bool(self.session.get_port_by_match(pattern))
 
     def select(self, names):
+        """
+        Select nodes in the scene that match a specific pattern.
+
+        :param str names: A list of node names to select.
+        """
+
         def _find_node(node):
             for n in self.session.nodes:
                 if n.name in names:
@@ -294,6 +356,12 @@ class MockedCmdsSession(object):
         self.session.selection = [y for name in names for y in _find_node(name)]
 
     def setAttr(self, dagpath, value):
+        """
+        Set the value of an attribute.
+
+        :param str dagpath: The dagpath to an attribute.
+        :param object value: The new value of the attribute.
+        """
         port = self.session.get_port_by_match(dagpath)
         port.value = value
 
@@ -324,8 +392,6 @@ class MockedCmdsSession(object):
 
     def connectAttr(self, src, dst, force=False, lock=False, nextAvailable=False, referenceDest=False):
         """
-        https://help.autodesk.com/cloudhelp/2016/ENU/Maya-Tech-Docs/Commands/connectAttr.html
-
         :param src: The connection source port.
         :type src: MockedPymelPort or str
         :param dst: The connection destination port.
@@ -349,7 +415,6 @@ class MockedCmdsSession(object):
 
     def disconnectAttr(self, src, dst, nextAvailable=False):
         """
-        https://help.autodesk.com/cloudhelp/2016/ENU/Maya-Tech-Docs/Commands/disconnectAttr.html
         :param src: The connection source port.
         :type src: MockedPymelPort or str
         :param dst: The connection destination port.

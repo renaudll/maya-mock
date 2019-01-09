@@ -1,14 +1,19 @@
 import itertools
 import logging
+import re
 import string
 from collections import defaultdict
 
+from maya_mock.base import naming
 from maya_mock.base.connection import MockedConnection
+from maya_mock.base.constants import BLACKLISTED_NODE_NAMES, SHAPE_CLASS, DEFAULT_PREFIX_BY_SHAPE_TYPE
+from maya_mock.base.naming import pattern_to_regex, conform_node_name
 from maya_mock.base.node import MockedNode
 from maya_mock.base.port import MockedPort
+from maya_mock.base.schema import MockedSessionSchema
 from maya_mock.base.signal import Signal
 
-log = logging.getLogger(__name__)
+LOG = logging.getLogger(__name__)
 
 
 class MockedSession(object):
@@ -18,48 +23,158 @@ class MockedSession(object):
     :param conf: The configuration of the session. (registered node types)
     If nothing is provided the default configuration will be used.
     """
-    nodeAdded = Signal(MockedNode)
-    nodeRemoved = Signal(MockedNode)
-    portAdded = Signal(MockedPort)
-    portRemoved = Signal(MockedPort)
-    connectionAdded = Signal(MockedConnection)
-    connectionRemoved = Signal(MockedConnection)
+    onNodeAdded = Signal(MockedNode)
+    onNodeRemoved = Signal(MockedNode)
+    onPortAdded = Signal(MockedPort)
+    onPortRemoved = Signal(MockedPort)
+    onConnectionAdded = Signal(MockedConnection)
+    onConnectionRemoved = Signal(MockedConnection)
 
-    def __init__(self, preset=None):
+    def __init__(self, schema=None):
+        """
+        :param schema: The schema to use for the session. Optional
+        :type schema: maya_mock.MockedSessionSchema or None
+        """
         super(MockedSession, self).__init__()
         self.nodes = set()
         self.ports = set()
         self.connections = set()
         self.selection = set()
         self.ports_by_node = defaultdict(set)
-        self.schema = preset
+        self.schema = schema
+
+        if schema:
+            if not isinstance(schema, MockedSessionSchema):
+                raise ValueError("Unexpected schema type for %s" % schema)
+            for name, type_ in schema.default_state.iteritems():
+                self.create_node(type_, name)
 
     # --- Public methods
 
     def node_exist(self, dagpath):
+        """
+        Determine if dagpath match an existing node or not.
+
+        :param str dagpath: A dagpath to match.
+        :param parent: If provided, the dagpath will be resolved relative to this node.
+        :type parent: MockedNode or None
+        :return: True if the dagpath match an existing object. False otherwise.
+        :rtype: bool
+        """
         return bool(self.get_node_by_match(dagpath, strict=False))
 
-    def _unique_name(self, prefix):
+    def _is_name_valid(self, name):
+        """
+        Determine if a name is valid for a node.
+        A node name:
+        - Cannot be empty
+        - Cannot start with a number
+        - Cannot match any blacklisted pattern
+
+        :param str name: The name to check.
+        :return: True if the name is valid. False otherwise.
+        :rtype: bool
+        """
+        return name and name not in BLACKLISTED_NODE_NAMES
+
+    def _unique_name(self, prefix, parent=None):
+        """
+        Resolve a unique name from a provided base suffix.
+
+        :param str prefix:
+        :param MockedNode parent:
+        :return:
+        """
         for i in itertools.count(1):
             name = "{}{}".format(prefix, i)
-            if not self.node_exist(name):
+            dagpath = naming.join(parent.dagpath, name) if parent else '|' + name
+            if self._is_name_valid(name) and not self.node_exist(dagpath):
                 return name
 
     def get_node_by_name(self, name):
+        """
+        Retrieve a node by it's name.
+        Note that multiple nodes can have the same name.
+
+        :param str name: The name of the MockedNode.
+        :return: A node or None if no match was found.
+        :rtype: MockedNode or None
+        """
         for node in self.nodes:
             if node.name == name:
                 return node
         return None
 
-    def get_node_by_match(self, pattern, strict=True):
-        for node in self.nodes:
-            if node.match(pattern):
-                return node
-        if strict:
+    def get_nodes_by_match(self, pattern, strict=True):
+        """
+        :param str pattern: The pattern to match.
+        :param parent: If defined, only nodes child of the provided parent node will be checked.
+        :type parent: MockedNode or None
+        :param bool strict: If True, a ValueError will be raised if no node are found.
+        :return: A node or None if no match was found.
+        :rtype: MockedNode or None
+        :raise ValueError: If no node are found matching provided pattern AND strict is True.
+        """
+        result = sorted(self.iter_node_by_match(pattern))
+        if strict and not result:
             raise ValueError("No object matches name: {}".format(pattern))
-        return None
+        return result
+
+    def is_pattern_clashing(self, node, pattern):
+        """
+        Determine if the MEL repr of a node clash with another node dagpath.
+
+        :param node:
+        :param pattern:
+        :return: True if provided pattern match with another node that provided. False otherwise.
+        :rtype bool
+        """
+        matches = self.iter_node_by_match(pattern)
+        for guess in matches:
+            if guess is not node:
+                return True
+        return False
+
+    def get_node_by_match(self, pattern, **kwargs):
+        """
+        Retrieve a node by matching it' against a provided pattern.
+        Note that multiple nodes can match the same pattern.
+
+        """
+        return next(iter(self.get_nodes_by_match(pattern, **kwargs)), None)
+
+    def iter_node_by_match(self, pattern):
+        """
+        Return the mel object representation of a node.
+        The mel object might look like the dagpath or the name, and it's because it's syntax change
+        so that the represent is never ambiguous in relation to the other nodes of a scene.
+
+        ex1: For a scene containing node '|A', the MEL repr of '|A' is 'A'.
+        ex2: The MEL repr of '|A' is '|A' if '|B|A' exist.
+
+        ex3: Considering nodes '|A|B' and '|B|A', the MEL repr of '|A|B' is 'A|B'.
+
+        if any(True for node in registry.nodes if node != self and node.name == self.name):
+            return self.dagpath
+        return self.name
+
+        :param MockedNode node: The node we want the MEL representation.
+        """
+        regex = pattern_to_regex(pattern)
+
+        for node in self.nodes:
+            if re.match(regex, node.dagpath):
+                yield node
 
     def get_port_by_match(self, pattern):
+        """
+        Retrieve a port by matching it against a provided pattern.
+        Note that multiple ports can match a same pattern.
+
+        :param str pattern: The pattern to match.
+        :return: A port or None if no match was found.
+        :rtype: MockedPort or None
+        """
         for port in self.ports:
             if port.match(pattern):
                 return port
@@ -76,31 +191,73 @@ class MockedSession(object):
         """
         return next((conn for conn in self.connections if conn.src is src and conn.dst is dst), None)
 
-    def create_node(self, node_type, name=None, emit=True):
+    def warning(self, msg):
+        """
+        Print a warning message.
+        Similar to cmds.warning
+
+        :param str msg: The message to display
+        """
+        print "Warning: %s" % msg
+
+    def create_node(self, node_type, name=None, parent=None, emit=True):
         """
         Create a new node in the scene.
 
         :param str node_type: The type of the node.
         :param str name: The name of the node.
-        :param bool emit: If True, the `portAdded` signal will be emitted.
+        :param parent: The parent of the node if applicable.
+        :type parent: MockedNode or None
+        :param bool emit: If True, the `onPortAdded` signal will be emitted.
         :return: The created node
         :rtype: MockedNode
         """
-        # TODO: cmds.createNode("locator") -> "locatorShape"
-        if name and not self.node_exist(name):
-            pass
+        is_shape_type = node_type in SHAPE_CLASS
+
+        # Validate if the provided name if any is valid.
+        # Remove any characters from name.
+        # Start by removing any invalid characters from the name.
+        if name:
+            name_conformed = conform_node_name(name)
+            if name != name_conformed:
+                self.warning('Removing invalid characters from name.')
+                name = name_conformed
+
+        # Handle the case where the resulting name is empty which can happen in invalid characters are found.
+        # ex: cmds.createNode('transform', name='0')
+        if name == '':
+            raise RuntimeError(u'New name has no legal characters.\n')
+
+        # If name is not provided, we'll name the object automatically
+        if not name:
+            # If node is a shape, add 'Shape' before the number.
+            if node_type in SHAPE_CLASS:
+                name = '%sShape' % DEFAULT_PREFIX_BY_SHAPE_TYPE.get(node_type, node_type)
+            # Otherwise, name the node against it's type.
+            else:
+                name = node_type
+
+            name = self._unique_name(name, parent=parent)
         else:
-            prefix = name if name else node_type
-            prefix = prefix.rstrip(string.digits)
-            name = self._unique_name(prefix)
+            # Next, if the name is invalid or clash with another node dagpath,
+            # we'll need to add a number suffix.
+            dagpath = '%s|%s' % (parent.dagpath, name) if parent else '|' + name
+            if not self._is_name_valid(name) or self.node_exist(dagpath):
+                name = name.rstrip(string.digits)
+                name = self._unique_name(name, parent=parent)
 
-        node = MockedNode(self, node_type, name)
-        self.nodes.add(node)
+        # If we are sure that we can create the node and it is a shape, create it's transform first.
+        if is_shape_type:
+            transform_name_prefix = DEFAULT_PREFIX_BY_SHAPE_TYPE.get(node_type, node_type)
+            transform_name = self._unique_name(transform_name_prefix)
+            parent = self.create_node('transform', name=transform_name)
 
+        node = MockedNode(self, node_type, name, parent=parent)
         if emit:
-            signal = self.nodeAdded
-            log.debug("%s emitted with %s", signal, node)
+            signal = self.onNodeAdded
+            LOG.debug("%s emitted with %s", signal, node)
             signal.emit(node)
+        self.nodes.add(node)
 
         # Add port from configuration if needed
         if self.schema:
@@ -114,7 +271,7 @@ class MockedSession(object):
         """
         Remove a node from the graph.
         :param node:
-        :param bool emit: If True, the `portAdded` signal will be emitted.
+        :param bool emit: If True, the `onPortAdded` signal will be emitted.
         """
         # Remove any port that where used by the node.
         ports = [port for port in self.ports if port.node is node]
@@ -122,7 +279,7 @@ class MockedSession(object):
             self.remove_port(port, emit=emit)
 
         if emit:
-            self.nodeRemoved.emit(node)
+            self.onNodeRemoved.emit(node)
 
         self.nodes.remove(node)
 
@@ -139,7 +296,7 @@ class MockedSession(object):
         self.ports_by_node[node].add(port)
         self.ports.add(port)
         if emit:
-            self.portAdded.emit(port)
+            self.onPortAdded.emit(port)
         return port
 
     def remove_port(self, port, emit=True):
@@ -155,7 +312,7 @@ class MockedSession(object):
             self.remove_connection(conn, emit=emit)
 
         if emit:
-            self.portRemoved.emit(port)
+            self.onPortRemoved.emit(port)
 
         self.ports.remove(port)
 
@@ -175,13 +332,13 @@ class MockedSession(object):
 
         :param port_in:
         :param port_out:
-        :param bool emit: If True, the `connectionAdded` signal will be emitted.
+        :param bool emit: If True, the `onConnectionAdded` signal will be emitted.
         :return:
         """
         connection = MockedConnection(port_src, port_dst)
         self.connections.add(connection)
         if emit:
-            self.connectionAdded.emit(connection)
+            self.onConnectionAdded.emit(connection)
         return connection
 
     def remove_connection(self, connection, emit=True):
@@ -189,11 +346,11 @@ class MockedSession(object):
         Remove an existing connection from the scene.
 
         :param connection:
-        :param bool emit: If True, the `connectionRemoved` signal will be emitted.
+        :param bool emit: If True, the `onConnectionRemoved` signal will be emitted.
         :return:
         """
         if emit:
-            self.connectionRemoved.emit(connection)
+            self.onConnectionRemoved.emit(connection)
         self.connections.remove(connection)
 
     # Node methods
