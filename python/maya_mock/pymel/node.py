@@ -70,7 +70,7 @@ class MockedPymelNode(object):
         :param str name: The name of the attribute to check.
         :param bool checkShape: Determine if we also need to check the shape of the node is a transform. Default is True.
         :return: True if the object has the provided attribute. False otherwise.
-        :rtype bool
+        :rtype:bool
         """
         session = self.__session
 
@@ -85,7 +85,7 @@ class MockedPymelNode(object):
     def name(self):
         """
         :return: The name of the node.
-        :rtype str
+        :rtype:str
         """
         return self._node.name
 

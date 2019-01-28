@@ -121,13 +121,13 @@ class MockedCmdsSession(object):
         Unlike the isConnected command, this command needs only one end of the connection.
         see: https://help.autodesk.com/cloudhelp/2017/ENU/Maya-Tech-Docs/Commands/connectionInfo.html
 
-        :param dagpath:
-        :param sourceFromDestination:
-        :param destinationFromSource:
+        :param str dagpath: A port dag path
+        :param bool sourceFromDestination:
+        :param bool destinationFromSource:
         :return: A boolean when asking for a property, depending on the flags used.
         A string when asking for a plug name.
         A string list When asking for a list of plugs.
-        :rtype bool or str or list(str)
+        :rtype:bool or str or list(str)
         """
         port = self.session.get_port_by_match(dagpath)
         if sourceFromDestination:
@@ -325,7 +325,7 @@ class MockedCmdsSession(object):
         param bool inherited: Return a string array containing the names of each of the base node types
         inherited by the given object.
         :return: The type of the node.
-        :rtype bool
+        :rtype:bool
         """
         node = self.session.get_node_by_name(name)
         return node.type

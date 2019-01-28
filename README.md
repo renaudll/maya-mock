@@ -1,4 +1,4 @@
-# mock_maya
+# maya_mock
 
 A mock for Autodesk Maya it's `cmds` and `pymel` API. 
 

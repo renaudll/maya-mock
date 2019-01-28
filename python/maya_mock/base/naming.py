@@ -24,7 +24,7 @@ def join(left, right):
     :param str left: A node dagpath or name.
     :param str right: A node name.
     :return: A dagpath combining the left and right operant.
-    :rtype str
+    :rtype:str
     """
     dagpath = '%s|%s' % (left.strip('|'), right.strip('|'))
     if left.startswith('|'):
@@ -45,7 +45,7 @@ def pattern_to_regex(pattern):
 
     :param pattern: The pattern to convert.
     :return: A regex string.
-    :rtype string
+    :rtype:string
     """
     # No pattern always match
     if pattern is None:

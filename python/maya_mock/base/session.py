@@ -18,10 +18,10 @@ LOG = logging.getLogger(__name__)
 
 class MockedSession(object):
     """
-    Maya mock that try to match pymel symbols.
+    Collection of nodes, ports and connections.
 
-    :param conf: The configuration of the session. (registered node types)
-    If nothing is provided the default configuration will be used.
+    :param schema: The schema to use for the session. Optional
+    :type schema: maya_mock.MockedSessionSchema or None
     """
     onNodeAdded = Signal(MockedNode)
     onNodeRemoved = Signal(MockedNode)
@@ -31,10 +31,6 @@ class MockedSession(object):
     onConnectionRemoved = Signal(MockedConnection)
 
     def __init__(self, schema=None):
-        """
-        :param schema: The schema to use for the session. Optional
-        :type schema: maya_mock.MockedSessionSchema or None
-        """
         super(MockedSession, self).__init__()
         self.nodes = set()
         self.ports = set()
@@ -127,7 +123,7 @@ class MockedSession(object):
         :param node:
         :param pattern:
         :return: True if provided pattern match with another node that provided. False otherwise.
-        :rtype bool
+        :rtype: bool
         """
         matches = self.iter_node_by_match(pattern)
         for guess in matches:
@@ -145,20 +141,11 @@ class MockedSession(object):
 
     def iter_node_by_match(self, pattern):
         """
-        Return the mel object representation of a node.
-        The mel object might look like the dagpath or the name, and it's because it's syntax change
-        so that the represent is never ambiguous in relation to the other nodes of a scene.
+        Yield all the node which dagpath match the provided pattern.
 
-        ex1: For a scene containing node '|A', the MEL repr of '|A' is 'A'.
-        ex2: The MEL repr of '|A' is '|A' if '|B|A' exist.
-
-        ex3: Considering nodes '|A|B' and '|B|A', the MEL repr of '|A|B' is 'A|B'.
-
-        if any(True for node in registry.nodes if node != self and node.name == self.name):
-            return self.dagpath
-        return self.name
-
-        :param MockedNode node: The node we want the MEL representation.
+        :param pattern: The node we want the MEL representation.
+        :return: A node generator
+        :rtype: Generator[MockedNode]
         """
         regex = pattern_to_regex(pattern)
 
@@ -367,7 +354,7 @@ class MockedSession(object):
         :param MockedNode node: The node to query.
         :param str name: The desired port name.
         :return: A port matching the requirements. None if nothing is found.
-        :rtype MockedPort or None
+        :rtype: MockedPort or None
         """
         assert (isinstance(node, MockedNode))
         assert (isinstance(name, basestring))
