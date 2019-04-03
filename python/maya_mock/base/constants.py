@@ -115,9 +115,10 @@ IMPOSSIBLE_CONNECTIONS = {
 }
 
 # Ensure that we have combination in reverse orders
-for (src, dst), value in CONVERSION_FACTOR_BY_TYPE.items():
-    CONVERSION_FACTOR_BY_TYPE[(dst, src)] = 1.0 / value
-
+CONVERSION_FACTOR_BY_TYPE = {
+    CONVERSION_FACTOR_BY_TYPE[key]: 1.0 / val
+    for key, val in CONVERSION_FACTOR_BY_TYPE.items()
+}
 
 MAYA_INSTALL_DIR_PER_PLATFORM = {
     'linux': (
