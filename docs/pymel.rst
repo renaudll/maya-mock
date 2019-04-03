@@ -19,9 +19,3 @@ Port
 
 .. autoclass:: maya_mock.MockedPymelPort
   :members:
-
-Decorator
----------
-
-.. autoclass:: maya_mock.decorators.mock_pymel
-  :members:

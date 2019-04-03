@@ -78,9 +78,9 @@ class MockedPort(object):
         Check if the node match a certain pattern.
         The pattern can be a fully qualified dagpath or a name.
 
-        - "child.foo"
-        - "child*.foo"
-        - "|child"
+        - `child.foo`
+        - `child*.foo`
+        - `|child`
 
         :param pattern:
         :return:

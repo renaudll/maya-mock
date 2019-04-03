@@ -53,7 +53,7 @@ class MockedCmdsSession(object):
         """
         Create an attribute
 
-        See `documentation <https://download.autodesk.com/us/maya/2009help/CommandsPython/addAttr.html>`_ for details.
+        See `documentation <https://download.autodesk.com/us/maya/2009help/CommandsPython/addAttr.html>`__ for details.
 
         """
         # Retrieve the attribute name.
@@ -82,7 +82,7 @@ class MockedCmdsSession(object):
         """
         List known node types.
 
-        See `documentation <https://download.autodesk.com/us/maya/2011help/CommandsPython/allNodeTypes.html>`_ for details.
+        See `documentation <https://download.autodesk.com/us/maya/2011help/CommandsPython/allNodeTypes.html>`__ for details.
         """
         raise NotImplementedError
 
@@ -90,7 +90,7 @@ class MockedCmdsSession(object):
         """
         Create a node
 
-        See `documentation <https://knowledge.autodesk.com/search-result/caas/CloudHelp/cloudhelp/2018/ENU/Maya-Tech-Docs/CommandsPython/createNode-html.html>`_ for details.
+        See `documentation <https://knowledge.autodesk.com/search-result/caas/CloudHelp/cloudhelp/2018/ENU/Maya-Tech-Docs/CommandsPython/createNode-html.html>`__ for details.
         """
         parent = self.session.get_node_by_match(parent) if parent else None
         node = self.session.create_node(_type, name=name, parent=parent)
@@ -106,15 +106,15 @@ class MockedCmdsSession(object):
         """
         Get information about connection sources and destinations.
 
-        See `documentation <https://help.autodesk.com/cloudhelp/2017/ENU/Maya-Tech-Docs/Commands/connectionInfo.html>`_ for details.
+        See `documentation <https://help.autodesk.com/cloudhelp/2017/ENU/Maya-Tech-Docs/Commands/connectionInfo.html>`__ for details.
 
         :param str dagpath: A port dag path
         :param bool sourceFromDestination:
         :param bool destinationFromSource:
         :return: A boolean when asking for a property, depending on the flags used.
-        A string when asking for a plug name.
-        A string list When asking for a list of plugs.
-        :rtype:bool or str or list(str)
+           A string when asking for a plug name.
+           A string list When asking for a list of plugs.
+        :rtype: bool or str or list(str)
         """
         port = self.session.get_port_by_match(dagpath)
         if sourceFromDestination and not destinationFromSource:
@@ -132,7 +132,7 @@ class MockedCmdsSession(object):
         """
         Create a connection
 
-        See `documentation <https://help.autodesk.com/cloudhelp/2016/ENU/Maya-Tech-Docs/CommandsPython/connectAttr.html>`_ for details.
+        See `documentation <https://help.autodesk.com/cloudhelp/2016/ENU/Maya-Tech-Docs/CommandsPython/connectAttr.html>`__ for details.
 
         :param str src: The connection source port.
         :param str dst: The connection destination port.
@@ -152,7 +152,7 @@ class MockedCmdsSession(object):
         """
         Delete nodes
 
-        See `documentation <https://download.autodesk.com/us/maya/2009help/CommandsPython/delete.html>`_ for details.
+        See `documentation <https://download.autodesk.com/us/maya/2009help/CommandsPython/delete.html>`__ for details.
 
         :param str name: A pattern defining what to delete.
         :param kwargs: Any additional keyword argument is not implemented.
@@ -164,7 +164,7 @@ class MockedCmdsSession(object):
         """
         Delete a connection
 
-        See `documentation <http://download.autodesk.com/us/maya/2009help/CommandsPython/disconnectAttr.html>`_ for details.
+        See `documentation <http://download.autodesk.com/us/maya/2009help/CommandsPython/disconnectAttr.html>`__ for details.
 
         :param str src: The connection source port.
         :param str dst: The connection destination port.
@@ -185,7 +185,7 @@ class MockedCmdsSession(object):
         """
         Delete an attribute (port).
 
-        See `documentation <https://download.autodesk.com/us/maya/2010help/CommandsPython/deleteAttr.html>`_ for details.
+        See `documentation <https://download.autodesk.com/us/maya/2010help/CommandsPython/deleteAttr.html>`__ for details.
         """
         attribute = kwargs.get('attribute') or kwargs.get('at')
 
@@ -204,7 +204,7 @@ class MockedCmdsSession(object):
         """
         Get the value associated with an attribute.
 
-        See `documentation <https://download.autodesk.com/us/maya/2009help/CommandsPython/getAttr.html>`_ for details.1
+        See `documentation <https://download.autodesk.com/us/maya/2009help/CommandsPython/getAttr.html>`__ for details.1
 
         :param str dagpath: A dagpath to an attribute.
         :return: The value associated with that attribute.
@@ -219,7 +219,7 @@ class MockedCmdsSession(object):
         """
         List node attributes (ports).
 
-        See `documentation <https://help.autodesk.com/cloudhelp/2017/ENU/Maya-Tech-Docs/Commands/listAttr.html>`_ for details.
+        See `documentation <https://help.autodesk.com/cloudhelp/2017/ENU/Maya-Tech-Docs/Commands/listAttr.html>`__ for details.
         """
         userDefined = kwargs.pop('userDefined', False)
 
@@ -239,7 +239,7 @@ class MockedCmdsSession(object):
         """
         List nodes
 
-        See `documentation <https://download.autodesk.com/us/maya/2011help/Commands/ls.html>`_ for details.
+        See `documentation <https://download.autodesk.com/us/maya/2011help/Commands/ls.html>`__ for details.
 
         :param str pattern: The pattern to match
         :param bool long: If True, return dag paths
@@ -275,10 +275,10 @@ class MockedCmdsSession(object):
         """
         Query a node type
 
-        See `documentation <https://help.autodesk.com/cloudhelp/2018/ENU/Maya-Tech-Docs/Commands/nodeType.html>`_ for details.
+        See `documentation <https://help.autodesk.com/cloudhelp/2018/ENU/Maya-Tech-Docs/Commands/nodeType.html>`__ for details.
 
         :return: The type of the node.
-        :rtype:bool
+        :rtype: bool
         """
         node = self.session.get_node_by_name(name)
         return node.type
@@ -287,7 +287,7 @@ class MockedCmdsSession(object):
         """
         Determine if an object exist.
 
-        See `documentation <https://download.autodesk.com/us/maya/2009help/CommandsPython/objExists.html>`_ for details.
+        See `documentation <https://download.autodesk.com/us/maya/2009help/CommandsPython/objExists.html>`__ for details.
 
         :param str pattern: The pattern to check.
         :return: True if an existing object match the provided pattern, False otherwise.
@@ -299,7 +299,7 @@ class MockedCmdsSession(object):
         """
         Select nodes in the scene that match a specific pattern.
 
-        See `documentation <https://download.autodesk.com/us/maya/2010help/CommandsPython/select.html>`_ for details.
+        See `documentation <https://download.autodesk.com/us/maya/2010help/CommandsPython/select.html>`__ for details.
 
         :param str names: A list of node names to select.
         """
@@ -315,7 +315,7 @@ class MockedCmdsSession(object):
         """
         Set the value of an attribute.
 
-        See `documentation <https://download.autodesk.com/global/docs/maya2012/en_us/CommandsPython/setAttr.html>`_ for details.
+        See `documentation <https://download.autodesk.com/global/docs/maya2012/en_us/CommandsPython/setAttr.html>`__ for details.
 
         :param str dagpath: The dagpath to an attribute.
         :param object value: The new value of the attribute.
@@ -327,7 +327,7 @@ class MockedCmdsSession(object):
         """
         Parent nodes
 
-        See `documentation <https://download.autodesk.com/global/docs/maya2012/en_us/CommandsPython/parent.html>`_ for details
+        See `documentation <https://download.autodesk.com/global/docs/maya2012/en_us/CommandsPython/parent.html>`__ for details
 
         :param dag_objects: The objects to parent.
         :param bool world: Will unparent provided objects if True.
@@ -355,7 +355,7 @@ class MockedCmdsSession(object):
         """
         Log a warning to stdout.
 
-        See `documentation <https://download.autodesk.com/global/docs/maya2014/en_us/CommandsPython/warning.html>`_ for details.
+        See `documentation <https://download.autodesk.com/global/docs/maya2014/en_us/CommandsPython/warning.html>`__ for details.
 
         :param str msg: The message to log
         """

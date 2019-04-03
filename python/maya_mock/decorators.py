@@ -1,8 +1,6 @@
 import sys
 from contextlib import contextmanager
 
-import mock
-
 from maya_mock.cmds import MockedCmdsSession
 from maya_mock.pymel import MockedPymelSession, MockedPymelNode, MockedPymelPort
 
@@ -36,6 +34,8 @@ def _create_cmds_module_mock(cmds):
     """
     Create a MagicMock for the cmds module.
     """
+    import mock
+
     kwargs = {'cmds': cmds}
     module_maya = mock.MagicMock(**kwargs)
     return module_maya
@@ -68,6 +68,7 @@ def mock_cmds(session):
 
 def _create_pymel_module_mock(pymel):
     # kwargs = {'core': pymel}
+    import mock
 
     kwargs = {
         'core.PyNode': MockedPymelNode,

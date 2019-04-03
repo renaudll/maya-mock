@@ -8,7 +8,7 @@ class MockedPymelNode(object):
     """
     A pymel.core.PyNode mock.
 
-    See `documentation <https://help.autodesk.com/cloudhelp/2018/CHS/Maya-Tech-Docs/PyMel/generated/classes/pymel.core.general/pymel.core.general.PyNode.html#pymel.core.general.PyNode>`_ for details.
+    See `documentation <https://help.autodesk.com/cloudhelp/2018/CHS/Maya-Tech-Docs/PyMel/generated/classes/pymel.core.general/pymel.core.general.PyNode.html#pymel.core.general.PyNode>`__ for details.
     """
     def __init__(self, pymel, node):
         self.__pymel = pymel
@@ -71,7 +71,7 @@ class MockedPymelNode(object):
         :param str name: The name of the attribute to check.
         :param bool checkShape: Determine if we also need to check the shape of the node is a transform. Default is True.
         :return: True if the object has the provided attribute. False otherwise.
-        :rtype:bool
+        :rtype: bool
         """
         session = self.__session
 
@@ -86,7 +86,7 @@ class MockedPymelNode(object):
     def name(self):
         """
         :return: The name of the node.
-        :rtype:str
+        :rtype: str
         """
         return self._node.name
 

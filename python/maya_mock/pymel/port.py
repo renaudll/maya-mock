@@ -5,7 +5,7 @@ class MockedPymelPort(object):
     """
     Port adaptor for a pymel.Attribute object.
 
-    See `documentation <https://help.autodesk.com/cloudhelp/2018/CHS/Maya-Tech-Docs/PyMel/generated/classes/pymel.core.general/pymel.core.general.Attribute.html#pymel.core.general.Attribute>`_ for details.
+    See `documentation <https://help.autodesk.com/cloudhelp/2018/CHS/Maya-Tech-Docs/PyMel/generated/classes/pymel.core.general/pymel.core.general.Attribute.html#pymel.core.general.Attribute>`__ for details.
     """
 
     def __init__(self, session, port):
