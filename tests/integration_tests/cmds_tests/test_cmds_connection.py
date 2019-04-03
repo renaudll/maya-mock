@@ -192,7 +192,6 @@ def test_connect_different_types(request, cmds, maya_session, src_data, dst_data
     note('connect %s to %s' % (port_src_dagpath, port_dst_dagpath))
     cmds.connectAttr(port_src_dagpath, port_dst_dagpath)
 
-    print 'no conversion needed'
     factor = CONVERSION_FACTOR_BY_TYPE.get((type_src, type_dst))
 
     if factor:

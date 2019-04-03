@@ -30,15 +30,14 @@ def _dump(cmds):
         result[node_name] = attrs
     return result
 
+
 class MayaComparison(RuleBasedStateMachine):
     NODES = Bundle('NODES')
 
     def __init__(self):
         super(MayaComparison, self).__init__()
 
-        # print "!"
         cmds.file(new=True, force=True)
-        # print len(cmds.ls())
 
         self.session = MockedSession(schema=schema)
         self.mockCmds = MockedCmdsSession(self.session)

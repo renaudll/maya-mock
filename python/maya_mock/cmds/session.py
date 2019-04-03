@@ -359,4 +359,4 @@ class MockedCmdsSession(object):
 
         :param str msg: The message to log
         """
-        print '# Warning: %s #' % msg
+        self.session.warning(msg)

@@ -212,7 +212,7 @@ class MockedSession(collections.MutableMapping):
 
         :param str msg: The message to display
         """
-        print "Warning: %s" % msg
+        print("Warning: %s" % msg)
 
     def create_node(self, node_type, name=None, parent=None, emit=True):
         """
