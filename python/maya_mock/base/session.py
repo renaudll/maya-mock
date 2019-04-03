@@ -1,3 +1,4 @@
+import collections
 import itertools
 import logging
 import re
@@ -16,7 +17,7 @@ from maya_mock.base.signal import Signal
 LOG = logging.getLogger(__name__)
 
 
-class MockedSession(object):
+class MockedSession(collections.MutableMapping):
     """
     Collection of nodes, ports and connections.
 
@@ -44,6 +45,32 @@ class MockedSession(object):
                 raise ValueError("Unexpected schema type for %s" % schema)
             for name, type_ in schema.default_state.iteritems():
                 self.create_node(type_, name)
+
+    def __str__(self):
+        return '<MockedSession %s nodes>' % len(self)
+
+    def __iter__(self):
+        return iter(self.nodes)
+
+    def __len__(self):
+        return len(self.nodes)
+
+    def __getitem__(self, item):
+        port = self.get_port_by_match(item)
+        if port:
+            return port
+
+        node = self.get_node_by_match(item)
+        if node:
+            return node
+
+        raise KeyError("Found no node or port matching %r" % item)
+
+    def __setitem__(self, key, value):
+        raise NotImplementedError
+
+    def __delitem__(self, key):
+        raise NotImplementedError
 
     # --- Public methods
 
