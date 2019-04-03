@@ -1,10 +1,76 @@
+import copy
 import logging
 
-LOG = logging.getLogger(__name__)
+log = logging.getLogger(__name__)
+
+
+def get_namespace_parent(namespace):
+    """
+    From a provided namespace, return it's parent or None if there's no parent.
+
+    >>> get_namespace_parent('org.foo.bar')
+    'org.foo'
+    >>> get_namespace_parent('org') is None
+    True
+
+    :param str namespace: The namespace to query.
+    :return: The parent namespace
+    :rtype: str
+    """
+    return namespace.rsplit('.', 1)[0] if '.' in namespace else None
+
+
+def get_namespace_leaf(namespace):
+    """
+    From a provided namespace, return it's leaf.
+
+    >>> get_namespace_leaf('foo.bar')
+    'bar'
+    >>> get_namespace_leaf('foo')
+    'foo'
+
+    :param namespace:
+    :return:
+    """
+    return namespace.rsplit('.', 1)[-1]
+
+
+def iter_namespaces(namespaces):
+    """
+    From a list of namespace, yield all namespaces including their parent in hierarchy order.
+
+    >>> tuple(iter_namespaces(['a.b', 'a.b.c', 'd.e']))
+    ('a', 'a.b', 'a.b.c', 'd', 'd.e')
+
+    :param namespaces: A list of namespaces.
+    :type namespaces: list(str)
+    :return: A namespace generator
+    :rtype: generator(str)
+    """
+    known = set()
+
+    def subroutine(namespace):
+        # Don't yield the same node twice
+        if namespace in known:
+            return
+
+        # Recursively yield parent first
+        parent_namespace = get_namespace_parent(namespace)
+        if parent_namespace:
+            for yielded in subroutine(parent_namespace):
+                yield yielded
+
+        # Yield
+        known.add(namespace)
+        yield namespace
+
+    for namespace in namespaces:
+        for yielded in subroutine(namespace):
+            yield yielded
 
 
 class NodeTypeDef(object):
-    def __init__(self, node_type, data, classification):
+    def __init__(self, namespace, data, classification, abstract=False, parent=None):
         """
         :param str node_type: The name of the node type (ex: 'transform')
         :param dict(str, dict) data: A dict(k,v) where:
@@ -12,9 +78,50 @@ class NodeTypeDef(object):
         - v is a dict containing the necessary information to build this port
         :param tuple(str) classification: The classification of the type as returned by cmds.getClassification.
         """
-        self.type = node_type
-        self.data = data
+        # Don't store the same attribute twice
+        if parent:
+            for key in parent.data.keys():
+                if key not in data:
+                    log.debug("Cannot find %r in %r" % (key, parent))
+                    continue
+                data.pop(key)
+
+        self.parent = parent
+        self.namespace = namespace
+        self.type = get_namespace_leaf(namespace)
+        self._data = data
         self.classification = classification
+        self.abstract = abstract
+
+    def __repr__(self):
+        return '<NodeTypeDef %r>' % self.type
+
+    @property
+    def data_local(self):
+        return self._data
+
+    @property  # TODO: memoize
+    def data(self):
+        """
+        Fully qualified dict of all the attributes associated with this node in the form of:
+
+        {
+            'attributeA':
+            {
+
+            },
+            'attributeB:
+            (...)
+        }
+
+        :return:
+        :rtype: dict(str, dict)
+        """
+        if self.parent:
+            result = copy.copy(self._data)
+            result.update(self.parent.data)
+            return result
+        return self._data
 
     def apply(self, session, node):
         """
@@ -32,9 +139,10 @@ class NodeTypeDef(object):
         :rtype: dict
         """
         return {
-            'node_type': self.type,
-            'attributes': self.data,
-            'classification': self.classification
+            'namespace': self.namespace,
+            'attributes': self.data_local,
+            'classification': self.classification,
+            'abstract': self.abstract,
         }
 
     @classmethod
@@ -44,26 +152,11 @@ class NodeTypeDef(object):
         :param dict data:
         :return:
         """
-        node_type = data['node_type']
+        namespace = data['namespace']
         attributes = data['attributes']
         classification = data['classification']
-        return cls(node_type, attributes, classification)
-
-    @classmethod
-    def generate(cls, node_type):
-        """
-        Retreive information about a registered node type in Maya as a dict.
-
-        :param str node_type: The type of node to inspect.
-        :return: An object dict
-        :rtype: dict
-        """
-        from maya_mock.base import _maya
-
-        data = _maya.get_node_attributes_info(node_type)
-        classification = _maya.get_node_classification(node_type)
-
-        return cls(node_type, data, classification)
+        abstract = data.get('abstract', False)
+        return cls(namespace, attributes, classification, abstract=abstract)
 
 
 class MockedSessionSchema(object):
@@ -93,11 +186,15 @@ class MockedSessionSchema(object):
         """
         if node.type in self.nodes:
             raise Exception("Node type %r is already registered!" % node.type)
+            return
 
         self.nodes[node.type] = node
 
     def get(self, node_type):  # TODO: rethink
         return self.nodes.get(node_type)
+
+    def get_node_by_namespace(self, query):
+        return next((node for namespace, node in self.nodes.iteritems() if namespace == query), None)
 
     def get_known_node_types(self):
         """
@@ -115,6 +212,7 @@ class MockedSessionSchema(object):
         :rtype: MockedSessionSchema
         """
         from maya import cmds
+        from maya_mock.base import _maya
 
         # Determine empty scene default state
         cmds.file(new=True, force=True)
@@ -123,26 +221,18 @@ class MockedSessionSchema(object):
         inst = cls(default_state=default_state)
 
         # Determine known nodes and their ports
-        node_types = cmds.allNodeTypes(includeAbstract=False)
-        num_types = len(node_types)
+        node_types = cmds.allNodeTypes()
 
-        for i, node_type in enumerate(node_types):
-
-            if fn_progress:
-                fn_progress(i, num_types, node_type)
-
-            # TODO: Mark abstract node types as abstract so they can't be created in a mocked session
-            # node_type2 = node_type.rstrip(' (abstract)')
-            # parent_type = cmds.nodeType(node_type, isTypeName=True, inherited=True)
-
-            try:
-                node_def = NodeTypeDef.generate(node_type)
-            except RuntimeError as e:  # This happen on HIKCharacterStateClien?
-                LOG.warning("Failed to generate NodeTypeDef for %r: %s", node_type, e)
-                continue
-
-            if node_def:
-                inst.register_node(node_def)
+        namespaces = sorted('.'.join(_maya.get_node_type_namespace(node_type)) for node_type in node_types)
+        for namespace in iter_namespaces(namespaces):
+            log.info('Registering %r' % namespace)
+            node_type = get_namespace_leaf(namespace)
+            parent_namespace = get_namespace_parent(namespace)
+            parent = inst.get_node_by_namespace(parent_namespace) if parent_namespace else None
+            data = _maya.get_node_attributes_info(node_type)
+            classification = _maya.get_node_classification(node_type)
+            node = NodeTypeDef(namespace, data, classification, parent=parent)
+            inst.register_node(node)
 
         return inst
 

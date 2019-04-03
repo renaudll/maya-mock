@@ -122,6 +122,7 @@ def main():
     shutil.copy2(path_tmp, path)
     os.remove(path_tmp)
 
+    LOG.info('Saved to %r' % path)
     LOG.info('Done. Closing Maya...')
 
 

@@ -1,7 +1,7 @@
 # pylint: disable=invalid-name
 from enum import Enum
 
-from maya_mock.base.session import MockedSession
+from maya_mock.base import MockedSession
 
 
 class EnumTypes(Enum):
@@ -74,16 +74,23 @@ class MockedCmdsSession(object):
 
         default = kwargs.get('defaultValue', 0.0)
 
-        # todo: fix this
-        name = name_long if name_long else name_short
+        name = name_long or name_short
 
-        for object in objects:
-            node = self.session.get_node_by_match(object)
-            self.session.create_port(node, name, short_name=name_short, value=default)
+        port_type = (
+                kwargs.get('attributeType') or
+                kwargs.get('at') or
+                kwargs.get('dataType') or
+                kwargs.get('dt') or
+                'float'
+        )
+
+        for object_ in objects:
+            node = self.session.get_node_by_match(object_)
+            self.session.create_port(node, name, port_type=port_type, short_name=name_short, value=default)
 
     def allNodeTypes(self, **kwargs):
         """
-        This command returns a list containing the type names of every kind of creatable node registered with the system.
+        This command returns a list containing the type names of every kind of creatable node registered with the system
         Note that some node types are abstract and cannot be created. These will not show up on this list.
         (e.g. transform and polyShape both inherit from dagObject,
         but dagObject cannot be created directly so it will not appear on this list.)
@@ -130,11 +137,16 @@ class MockedCmdsSession(object):
         :rtype:bool or str or list(str)
         """
         port = self.session.get_port_by_match(dagpath)
-        if sourceFromDestination:
+        if sourceFromDestination and not destinationFromSource:
             return next(
-                (connection.src.__melobject__() for connection in self.session.get_port_input_connections(port)), '')
-        if destinationFromSource:
+                (connection.src.__melobject__() for connection in self.session.get_port_input_connections(port)), ''
+            )
+        elif destinationFromSource and not sourceFromDestination:
             return [connection.dst.__melobject__() for connection in self.session.get_port_output_connections(port)]
+        elif sourceFromDestination and destinationFromSource:
+            raise RuntimeError('You cannot specify more than one flag.')
+        else:  # elif not sourceFromDestination and not destinationFromSource
+            raise RuntimeError('You must specify exactly one flag.')
 
     def delete(self, name):
         """
@@ -146,6 +158,51 @@ class MockedCmdsSession(object):
         node = self.session.get_node_by_name(name)
         self.session.remove_node(node)
 
+    def deleteAttr(self, *queries, **kwargs):
+        """
+        This command is used to delete a dynamic attribute from a node or nodes.
+        The attribute can be specified by using either the long or short name.
+        Only one dynamic attribute can be deleted at a time.
+        Static attributes cannot be deleted.
+        Children of a compound attribute cannot be deleted.
+        You must delete the complete compound attribute.
+        This command has no edit capabilities.
+        The only query ability is to list all the dynamic attributes of a node.
+
+            import maya.cmds as cmds
+
+            cmds.createNode( 'planet', n='mars' )
+            cmds.addAttr( ln='martians', sn='mr', at='double' )
+            cmds.addAttr( ln='greenMen', sn='gm', at='double' )
+
+            # Delete an attribute named mr/martians.
+            cmds.deleteAttr( 'mars', at='mr' )
+
+            # Alternative syntax
+            cmds.deleteAttr( 'mars.greenMen' )
+
+            # Query for the list of dynamic attributes.
+            cmds.deleteAttr( 'mars', q=True )
+
+        https://download.autodesk.com/us/maya/2010help/CommandsPython/deleteAttr.html
+
+        :param node:
+        :param attribute:
+        :return:
+        """
+        attribute = kwargs.get('attribute') or kwargs.get('at')
+
+        for query in queries:
+            # If the provided value match a specific port, delete it.
+            port = self.session.get_port_by_match(query)
+            if port:
+                self.session.remove_port(port)
+                continue
+
+            query = '.'.join((query, attribute))
+            port = self.session.get_port_by_match(query)
+            self.session.remove_port(port)
+
     def getAttr(self, dagpath):
         """
         Get the value associated with an attribute.
@@ -155,6 +212,8 @@ class MockedCmdsSession(object):
         :rtype: bool
         """
         port = self.session.get_port_by_match(dagpath)
+        if port is None:
+            raise ValueError('No object matches name: %s' % dagpath)
         return port.value
 
     def listAttr(self, *objects, **kwargs):
@@ -390,6 +449,17 @@ class MockedCmdsSession(object):
         for child in children:
             child.set_parent(parent)
 
+    def _conform_port_src_dst(self, src, dst):
+        port_src = self.session.get_port_by_match(src)
+        if port_src is None:
+            raise RuntimeError('The source attribute %r cannot be found.' % src)
+
+        port_dst = self.session.get_port_by_match(dst)
+        if port_dst is None:
+            raise RuntimeError('The destination attribute %r cannot be found.' % dst)
+
+        return port_src, port_dst
+
     def connectAttr(self, src, dst, force=False, lock=False, nextAvailable=False, referenceDest=False):
         """
         :param src: The connection source port.
@@ -401,17 +471,15 @@ class MockedCmdsSession(object):
         :param bool nextAvailable:
         :param bool referenceDest:
         """
-        port_src = self.session.get_port_by_match(src)
-        port_dst = self.session.get_port_by_match(dst)
-        # todo: what if connection already exist?
+        src, dst = self._conform_port_src_dst(src, dst)
 
         for connection in self.session.connections:
-            if connection.src is port_src and connection.dst is port_dst:
+            if connection.src is src and connection.dst is dst:
                 # This also raise this warning to the script editor:
-                # Warning: 'transform1.translateX' is already connected to 'transform1.translateY'.
+                self.warning('%r is already connected to %r.' % (src, dst))
                 raise RuntimeError('Maya command error')
 
-        self.session.create_connection(port_src, port_dst)
+        self.session.create_connection(src, dst)
 
     def disconnectAttr(self, src, dst, nextAvailable=False):
         """
@@ -421,13 +489,15 @@ class MockedCmdsSession(object):
         :type dst: MockedPymelPort or str
         :param bool nextAvailable:
         """
-        port_src = self.session.get_port_by_match(src)
-        port_dst = self.session.get_port_by_match(dst)
-        connection = self.session.get_connection_by_ports(port_src, port_dst)
+        src, dst = self._conform_port_src_dst(src, dst)
+        connection = self.session.get_connection_by_ports(src, dst)
 
         if not connection:
             raise RuntimeError(u"There is no connection from '{}' to '{}' to disconnect".format(
-                port_src.__melobject__(), port_dst.__melobject__(),
+                src.__melobject__(), dst.__melobject__(),
             ))
 
         self.session.remove_connection(connection)
+
+    def warning(self, msg):
+        print '# Warning: %s #' % msg

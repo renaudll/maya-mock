@@ -95,10 +95,18 @@ class MockedPort(object):
         if dagpath == '|' + pattern:
             return True
 
-        node_name, port_name = dagpath.split('.')
+        dagpath_short = self.dagpath_short
+        if dagpath_short == '|' + pattern:
+            return True
+
+        port_name = self.name
+        port_short_name = self.short_name
 
         # Match attribute name
         if port_name == pattern or fnmatch.fnmatch(port_name, pattern):
+            return True
+
+        if port_short_name == pattern or fnmatch.fnmatch(port_short_name, pattern):
             return True
 
         return False
@@ -112,3 +120,13 @@ class MockedPort(object):
         :rtype: str
         """
         return "{}.{}".format(self.node.dagpath, self.name)
+
+    @property
+    def dagpath_short(self):
+        """
+        Resolve a dagpath from the port short name.
+
+        :return: A fully qualified dagpath to the port.
+        :rtype: str
+        """
+        return "{}.{}".format(self.node.dagpath, self.short_name)

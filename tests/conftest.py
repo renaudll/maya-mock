@@ -1,17 +1,42 @@
+import os
 import pytest
 
-from maya_mock import MockedSession, MockedCmdsSession, MockedPymelSession
+from maya_mock import MockedSession, MockedCmdsSession, MockedPymelSession, MockedSessionSchema
 
 
 @pytest.fixture
-def session():
+def schema_maya_2017():
+    """
+    Path to a schema export with maya 2017
+    Unused by default.
+
+    :return: An absolute file path
+    :rtype: str
+    """
+    return os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'resources', 'schema2017.json'))
+
+
+@pytest.fixture
+def schema():
+    """
+    Create a Maya session schema.
+    This is made to be overridden by higher level tests.
+
+    :return: A mocked session schema
+    :rtype: MockedSessionSchema
+    """
+    return MockedSessionSchema()
+
+
+@pytest.fixture
+def session(schema):
     """
     Create a mocked Maya session
 
     :return: A mocked session instance.
     rtype: MockedSession
     """
-    return MockedSession()
+    return MockedSession(schema=schema)
 
 
 @pytest.fixture
@@ -35,4 +60,3 @@ def pymel_mock(session):
     :rtype: MockedPymelSession
     """
     return MockedPymelSession(session)
-

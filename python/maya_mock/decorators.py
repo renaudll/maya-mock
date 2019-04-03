@@ -42,7 +42,7 @@ def _create_cmds_module_mock(cmds):
 
 
 @contextmanager
-def mock_cmds(session, patch_sys_modules=True):
+def mock_cmds(session):
     """
     Context that temporary intercept maya.session with our mock.
     Use this to run complex maya operations in a mocked env.
@@ -52,7 +52,7 @@ def mock_cmds(session, patch_sys_modules=True):
     >>> with mock_cmds(session) as session:
     >>>     cmds.createNode('transform1')
 
-    :param MockedCmdsSession session: The session to mock.
+    :param MockedSession session: The session to mock.
     :return: A context
     :rtype: contextmanager.GeneratorContextManager
     """
@@ -82,7 +82,7 @@ def _create_pymel_module_mock(pymel):
     return module_pymel
 
 @contextmanager
-def mock_pymel(session, patch_sys_modules=True):
+def mock_pymel(session):
     """
     Context that temporary intercept maya.cmds with our mock.
     Use this to run complex maya operations in a mocked env.

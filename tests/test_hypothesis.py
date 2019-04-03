@@ -1,15 +1,16 @@
 import os
+import pytest
 
 import hypothesis.strategies as st
-from hypothesis import event
-from hypothesis.stateful import RuleBasedStateMachine, rule, invariant
+from hypothesis.stateful import RuleBasedStateMachine, rule, invariant, Bundle, consumes
 from maya import cmds, standalone
 
 from maya_mock import MockedSession, MockedCmdsSession, MockedSessionSchema
 
+from maya_mock.base import constants
 standalone.initialize()
 
-schema_file = os.path.expanduser('~/dev/py/maya-mock/schema.json')
+schema_file = os.path.join(constants.TEST_RESOURCE_DIR, 'schema2017.json')
 schema = MockedSessionSchema.from_json_file(schema_file)
 
 # schema = MockedSessionSchema.generate()
@@ -29,8 +30,9 @@ def _dump(cmds):
         result[node_name] = attrs
     return result
 
-
 class MayaComparison(RuleBasedStateMachine):
+    NODES = Bundle('NODES')
+
     def __init__(self):
         super(MayaComparison, self).__init__()
 
@@ -66,19 +68,20 @@ class MayaComparison(RuleBasedStateMachine):
 
         return v_mock
 
-    @rule(name=strategy_node_name, type_=strategy_node_type)
+    @rule(target=NODES, name=strategy_node_name, type_=strategy_node_type)
     def create_node(self, name, type_):
-        return self._cmd('createNode', type_, name=name)
+        before = {node.dagpath for node in self.session.nodes}
+        self._cmd('createNode', type_, name=name)
+        after = {node.dagpath for node in self.session.nodes}
+        return after - before
 
-    # @precondition(lambda self: self.mockCmds.ls)  # Only if nodes are remaining
-    def delete_node(self, name):
-        event("Deleting node {}".format(name))
-
-        # Remove from mock
-        self.mockCmds.delete(name)
-
-        # Remove from maya
-        cmds.delete(name)
+    # # @precondition(lambda self: self._cmd['ls'])  # Only if nodes are remaining
+    # @rule(name=consumes(NODES))
+    # def delete_node(self, name):
+    #     before = {node.dagpath for node in self.session.nodes}
+    #     self._cmd('delete', name)
+    #     after = {node.dagpath for node in self.session.nodes}
+    #     return before - after
 
     @invariant()
     def values_agree(self):
@@ -89,5 +92,5 @@ class MayaComparison(RuleBasedStateMachine):
         assert set(actual.keys()) == set(expected.keys())
         assert actual == expected
 
-
-TestDBComparison = MayaComparison.TestCase
+# TODO: Uncomment to run
+# TestDBComparison = MayaComparison.TestCase

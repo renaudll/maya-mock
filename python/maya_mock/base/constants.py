@@ -1,3 +1,4 @@
+import os
 from enum import Enum
 
 # These name are reserved and cannot be used as-is.
@@ -101,8 +102,34 @@ class EnumAttrTypes(Enum):
     polyFaces = 'polyFaces'
 
 
+# Determine which type combination create unitConversion node and what is the conversionFactor value.
+# If a type is not here it won't create any unitConversion.
+CONVERSION_FACTOR_BY_TYPE = {
+    (EnumAttrTypes.double, EnumAttrTypes.doubleAngle): 0.017453292519943295,
+    (EnumAttrTypes.bool, EnumAttrTypes.doubleAngle): 0.017453292519943295,
+}
+
+# Connection ports that cannot be connected together.
+IMPOSSIBLE_CONNECTIONS = {
+    (EnumAttrTypes.char, EnumAttrTypes.string),
+}
+
+# Ensure that we have combination in reverse orders
+for (src, dst), value in CONVERSION_FACTOR_BY_TYPE.items():
+    CONVERSION_FACTOR_BY_TYPE[(dst, src)] = 1.0 / value
+
+
 MAYA_INSTALL_DIR_PER_PLATFORM = {
     'linux': (
         '/usr/autodesk/maya*/bin/mayapy',
     )
 }
+
+TEST_RESOURCE_DIR = os.path.abspath(os.path.join(
+    os.path.dirname(__file__),
+    '..',  # base
+    '..',  # maya_mock
+    '..',  # python
+    'tests',
+    'resources'
+))

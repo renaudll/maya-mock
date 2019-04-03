@@ -6,7 +6,7 @@ from collections import defaultdict
 
 from maya_mock.base import naming
 from maya_mock.base.connection import MockedConnection
-from maya_mock.base.constants import BLACKLISTED_NODE_NAMES, SHAPE_CLASS, DEFAULT_PREFIX_BY_SHAPE_TYPE
+from maya_mock.base.constants import BLACKLISTED_NODE_NAMES, SHAPE_CLASS, DEFAULT_PREFIX_BY_SHAPE_TYPE, CONVERSION_FACTOR_BY_TYPE, IMPOSSIBLE_CONNECTIONS
 from maya_mock.base.naming import pattern_to_regex, conform_node_name
 from maya_mock.base.node import MockedNode
 from maya_mock.base.port import MockedPort
@@ -210,7 +210,7 @@ class MockedSession(object):
                 self.warning('Removing invalid characters from name.')
                 name = name_conformed
 
-        # Handle the case where the resulting name is empty which can happen in invalid characters are found.
+        # Handle the case where the resulting name is empty which can happen if invalid characters are found.
         # ex: cmds.createNode('transform', name='0')
         if name == '':
             raise RuntimeError(u'New name has no legal characters.\n')
@@ -313,16 +313,38 @@ class MockedSession(object):
         port = self.get_node_port_by_name(node, name)
         self.remove_port(port, emit=emit)
 
-    def create_connection(self, port_src, port_dst, emit=True):
+    def create_connection(self, src, dst, emit=True):
         """
         Create a new connection in the scene.
 
-        :param port_in:
-        :param port_out:
+        :param MockedPort src: The connection source port.
+        :param MockedPort dst: The connection destination port.
         :param bool emit: If True, the `onConnectionAdded` signal will be emitted.
-        :return:
+        :return: A connection
+        :rtype: MockedConnection
         """
-        connection = MockedConnection(port_src, port_dst)
+        # TODO: What do we return if multiple connections are created?
+        assert src.type
+        assert dst.type
+        key = src.type, dst.type
+
+        if key in IMPOSSIBLE_CONNECTIONS:
+            msg = 'The attribute %r cannot be connected to %r.' % (src.dagpath, dst.dagpath)
+            raise RuntimeError(msg)
+
+        # When connecting some port types together, Maya can create a unitConversion node.
+        conversionFactor = CONVERSION_FACTOR_BY_TYPE.get((src.type, dst.type))
+        if conversionFactor:
+            node_conversion = self.create_node('unitConversion')
+            port_input = self.get_node_port_by_name(node_conversion, 'input')
+            port_output = self.get_node_port_by_name(node_conversion, 'output')
+            port_factor = self.get_node_port_by_name(node_conversion, 'conversionFactor')
+            port_factor.value = conversionFactor
+            self.create_connection(src, port_input)
+            self.create_connection(port_output, dst)
+            return None
+
+        connection = MockedConnection(src, dst)
         self.connections.add(connection)
         if emit:
             self.onConnectionAdded.emit(connection)

@@ -111,7 +111,7 @@ class MockedNode(object):
             parent.children.add(self)
         self._parent = parent
 
-    def get_port_by_name(self, name):
+    def get_port_by_name(self, name):  # TODO: Deprecate? This should be called from session instead
         """
         Query a specific node port by it's name.
         :param str name: The name of the port to search.

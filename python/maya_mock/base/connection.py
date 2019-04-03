@@ -11,7 +11,11 @@ class MockedConnection(object):
         :param maya_mock.MockedPort port_src: The connection source port.
         :param maya_mock.MockedPort port_dst: The connection destination port.
         """
+        assert port_src
+        assert port_dst
+
         super(MockedConnection, self).__init__()
+
         self._port_src = port_src
         self._port_dst = port_dst
 

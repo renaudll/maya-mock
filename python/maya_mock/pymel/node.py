@@ -112,10 +112,11 @@ class MockedPymelNode(object):
         :rtype: MockedPymelNode or None
         """
         pymel = self.__pymel
-        parent = self._node.parent
-        if parent is None:
-            return None
-        return pymel._node_to_pynode(parent)
+        node = self._node
+        for i in range(generation):
+            node = node.parent
+
+        return pymel._node_to_pynode(node) if node else None
 
     def setParent(self, *args, **kwargs):
         """

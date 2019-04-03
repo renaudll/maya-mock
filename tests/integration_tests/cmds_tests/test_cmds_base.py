@@ -159,11 +159,43 @@ def test_addAttr_missingName(cmds):
     # assert exception.match(u'New attribute needs either a long (-ln) or short (-sn) attribute name.')
 
 
+def test_deleteAttr(cmds):
+    """Ensure we can delete a dynamic attribute."""
+    node = cmds.createNode('transform')
+    cmds.addAttr(node, longName='foo')
+    cmds.deleteAttr(node, attribute='foo')
+    assert not cmds.objExists('transform1.foo')
+
+
 def test_getAttr_defaultValue(cmds):
     """Ensure we can query the value of a port."""
     node = cmds.createNode('transform')
     cmds.addAttr(node, longName='foo', defaultValue=1.0)
-    assert cmds.getAttr('transform1.foo') == 1
+    assert cmds.getAttr('transform1.foo') == 1.0
+
+
+def test_getAttr_invalid_path(cmds):
+    """Ensure we fail the same way as Maya when calling getAttr with a non-existent dag path."""
+    node = cmds.createNode('transform')
+    with pytest.raises(ValueError) as exception:
+        cmds.getAttr('transform1.a_missing_attribute')
+    assert exception.match('No object matches name: transform1.a_missing_attribute')
+
+
+def test_getAttr_shortName(cmds):
+    """Ensure we can call getAttr using a port short name."""
+    node = cmds.createNode('transform')
+    cmds.addAttr(node, longName='fooLong', shortName='fooShort', defaultValue=1.0)
+    assert cmds.getAttr('transform1.fooShort') == 1.0
+
+
+def test_getAttr_niceName(cmds):
+    """Ensure that like Maya, we can't call getAttr from a port using it's nice name."""
+    node = cmds.createNode('transform')
+    cmds.addAttr(node, longName='fooLong', niceName='fooNice', defaultValue=1.0)
+    with pytest.raises(ValueError) as exception:
+        cmds.getAttr('transform1.fooNice')
+    assert exception.match('No object matches name: transform1.fooNice')
 
 
 def test_setAttr(cmds):
@@ -181,51 +213,7 @@ def test_listAttr(cmds):
     assert cmds.listAttr(node, userDefined=True) == ['foo']
 
 
-def test_connectAttr(cmds):
-    """Ensure we can create a connection."""
+def test_nodeType(cmds):
+    """Ensure nodeType work as expected."""
     node = cmds.createNode('transform')
-    cmds.addAttr(node, longName='src')
-    cmds.addAttr(node, longName='dst')
-    cmds.connectAttr('transform1.src', 'transform1.dst')
-
-    assert cmds.connectionInfo('transform1.src', destinationFromSource=True) == ['transform1.dst']
-    assert cmds.connectionInfo('transform1.src', sourceFromDestination=True) == ''
-    assert cmds.connectionInfo('transform1.dst', sourceFromDestination=True) == 'transform1.src'
-    assert cmds.connectionInfo('transform1.dst', destinationFromSource=True) == []
-
-
-def test_connectAttr_existing_connection(cmds):
-    """Ensure that trying to create a connection using already connection nodes raise a RuntimeError."""
-    node = cmds.createNode('transform')
-    cmds.addAttr(node, longName='src')
-    cmds.addAttr(node, longName='dst')
-    cmds.connectAttr('transform1.src', 'transform1.dst')
-    with pytest.raises(RuntimeError) as exception:
-        cmds.connectAttr('transform1.src', 'transform1.dst')
-    assert str(exception.value) == 'Maya command error'
-
-
-@pytest.fixture
-def connection(cmds):
-    node = cmds.createNode('transform')
-    cmds.addAttr(node, longName='src')
-    cmds.addAttr(node, longName='dst')
-    cmds.connectAttr('transform1.src', 'transform1.dst')
-
-
-@pytest.mark.usefixtures('connection')
-def test_disconnectAttr(cmds):
-    """Ensure that trying to create a connection using already connection nodes raise a RuntimeError."""
-    cmds.disconnectAttr('transform1.src', 'transform1.dst')
-    assert cmds.connectionInfo('transform1.src', destinationFromSource=True) == []
-    assert cmds.connectionInfo('transform1.src', sourceFromDestination=True) == ''
-    assert cmds.connectionInfo('transform1.dst', sourceFromDestination=True) == ''
-    assert cmds.connectionInfo('transform1.dst', destinationFromSource=True) == []
-
-
-@pytest.mark.usefixtures('connection')
-def test_disconnectAttr_no_connection(cmds):
-    with pytest.raises(RuntimeError) as exception:
-        cmds.disconnectAttr('transform1.dst', 'transform1.src')  # note: args are inverted
-    # TODO: Use absolute comparison, there's an issue with the last '\n' character.
-    assert exception.match(ur"There is no connection from 'transform1.dst' to 'transform1.src' to disconnect")
+    assert cmds.nodeType(node) == 'transform'
