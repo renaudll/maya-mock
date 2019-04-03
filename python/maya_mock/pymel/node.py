@@ -8,8 +8,7 @@ class MockedPymelNode(object):
     """
     A pymel.core.PyNode mock.
 
-    Original documentation:
-    https://help.autodesk.com/cloudhelp/2018/CHS/Maya-Tech-Docs/PyMel/generated/classes/pymel.core.general/pymel.core.general.PyNode.html#pymel.core.general.PyNode
+    See `documentation <https://help.autodesk.com/cloudhelp/2018/CHS/Maya-Tech-Docs/PyMel/generated/classes/pymel.core.general/pymel.core.general.PyNode.html#pymel.core.general.PyNode>`_ for details.
     """
     def __init__(self, pymel, node):
         self.__pymel = pymel
@@ -25,9 +24,11 @@ class MockedPymelNode(object):
 
     def __getattr__(self, item):
         """
-        pymel behavior when __getattr__ is called is to try to resolve a port with the name.
+        Reproduce pymel.PyNode.__getattr__ behavior which is to resolve a port by it's name.
+
         :param str item: The attribute name.
-        :return:
+        :return: A mocked pymel.Attribute
+        :rtype: maya_mock.MockedPymelPort
         :raise: AttributeError: If no port if found matching the name.
         """
         session = self.__session

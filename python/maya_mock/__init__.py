@@ -24,5 +24,5 @@ __all__ = (
     'MockedPymelSession',
     'MockedPymelNode',
     'MockedPymelPort',
-    'LOG'
+    'log'
 )
