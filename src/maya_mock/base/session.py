@@ -7,7 +7,13 @@ from collections import defaultdict
 
 from maya_mock.base import naming
 from maya_mock.base.connection import MockedConnection
-from maya_mock.base.constants import BLACKLISTED_NODE_NAMES, SHAPE_CLASS, DEFAULT_PREFIX_BY_SHAPE_TYPE, CONVERSION_FACTOR_BY_TYPE, IMPOSSIBLE_CONNECTIONS
+from maya_mock.base.constants import (
+    BLACKLISTED_NODE_NAMES,
+    SHAPE_CLASS,
+    DEFAULT_PREFIX_BY_SHAPE_TYPE,
+    CONVERSION_FACTOR_BY_TYPE,
+    IMPOSSIBLE_CONNECTIONS,
+)
 from maya_mock.base.naming import pattern_to_regex, conform_node_name
 from maya_mock.base.node import MockedNode
 from maya_mock.base.port import MockedPort
@@ -24,6 +30,7 @@ class MockedSession(collections.MutableMapping):
     :param schema: The schema to use for the session. Optional
     :type schema: maya_mock.MockedSessionSchema or None
     """
+
     onNodeAdded = Signal(MockedNode)
     onNodeRemoved = Signal(MockedNode)
     onPortAdded = Signal(MockedPort)
@@ -34,6 +41,7 @@ class MockedSession(collections.MutableMapping):
     def __init__(self, schema=None):
         super(MockedSession, self).__init__()
         self.nodes = set()
+        self.namespaces = set()
         self.ports = set()
         self.connections = set()
         self.selection = set()
@@ -43,11 +51,11 @@ class MockedSession(collections.MutableMapping):
         if schema:
             if not isinstance(schema, MockedSessionSchema):
                 raise ValueError("Unexpected schema type for %s" % schema)
-            for name, type_ in schema.default_state.iteritems():
+            for name, type_ in schema.default_state.items():
                 self.create_node(type_, name)
 
     def __str__(self):
-        return '<MockedSession %s nodes>' % len(self)
+        return "<MockedSession %s nodes>" % len(self)
 
     def __iter__(self):
         return iter(self.nodes)
@@ -110,7 +118,7 @@ class MockedSession(collections.MutableMapping):
         """
         for i in itertools.count(1):
             name = "{}{}".format(prefix, i)
-            dagpath = naming.join(parent.dagpath, name) if parent else '|' + name
+            dagpath = naming.join(parent.dagpath, name) if parent else "|" + name
             if self._is_name_valid(name) and not self.node_exist(dagpath):
                 return name
 
@@ -203,7 +211,10 @@ class MockedSession(collections.MutableMapping):
         :return: An existing connection. None otherwise.
         :rtype: MockedConnection or None
         """
-        return next((conn for conn in self.connections if conn.src is src and conn.dst is dst), None)
+        return next(
+            (conn for conn in self.connections if conn.src is src and conn.dst is dst),
+            None,
+        )
 
     def warning(self, msg):
         """
@@ -234,19 +245,21 @@ class MockedSession(collections.MutableMapping):
         if name:
             name_conformed = conform_node_name(name)
             if name != name_conformed:
-                self.warning('Removing invalid characters from name.')
+                self.warning("Removing invalid characters from name.")
                 name = name_conformed
 
         # Handle the case where the resulting name is empty which can happen if invalid characters are found.
         # ex: cmds.createNode('transform', name='0')
-        if name == '':
-            raise RuntimeError(u'New name has no legal characters.\n')
+        if name == "":
+            raise RuntimeError(u"New name has no legal characters.\n")
 
         # If name is not provided, we'll name the object automatically
         if not name:
             # If node is a shape, add 'Shape' before the number.
             if node_type in SHAPE_CLASS:
-                name = '%sShape' % DEFAULT_PREFIX_BY_SHAPE_TYPE.get(node_type, node_type)
+                name = "%sShape" % DEFAULT_PREFIX_BY_SHAPE_TYPE.get(
+                    node_type, node_type
+                )
             # Otherwise, name the node against it's type.
             else:
                 name = node_type
@@ -255,16 +268,18 @@ class MockedSession(collections.MutableMapping):
         else:
             # Next, if the name is invalid or clash with another node dagpath,
             # we'll need to add a number suffix.
-            dagpath = '%s|%s' % (parent.dagpath, name) if parent else '|' + name
+            dagpath = "%s|%s" % (parent.dagpath, name) if parent else "|" + name
             if not self._is_name_valid(name) or self.node_exist(dagpath):
                 name = name.rstrip(string.digits)
                 name = self._unique_name(name, parent=parent)
 
         # If we are sure that we can create the node and it is a shape, create it's transform first.
         if is_shape_type:
-            transform_name_prefix = DEFAULT_PREFIX_BY_SHAPE_TYPE.get(node_type, node_type)
+            transform_name_prefix = DEFAULT_PREFIX_BY_SHAPE_TYPE.get(
+                node_type, node_type
+            )
             transform_name = self._unique_name(transform_name_prefix)
-            parent = self.create_node('transform', name=transform_name)
+            parent = self.create_node("transform", name=transform_name)
 
         node = MockedNode(self, node_type, name, parent=parent)
         if emit:
@@ -321,7 +336,9 @@ class MockedSession(collections.MutableMapping):
         :return:
         """
         # Remove any connection that used the port
-        connections = [conn for conn in self.connections if conn.src is port or conn.dst is port]
+        connections = [
+            conn for conn in self.connections if conn.src is port or conn.dst is port
+        ]
         for conn in connections:
             self.remove_connection(conn, emit=emit)
 
@@ -356,16 +373,21 @@ class MockedSession(collections.MutableMapping):
         key = src.type, dst.type
 
         if key in IMPOSSIBLE_CONNECTIONS:
-            msg = 'The attribute %r cannot be connected to %r.' % (src.dagpath, dst.dagpath)
+            msg = "The attribute %r cannot be connected to %r." % (
+                src.dagpath,
+                dst.dagpath,
+            )
             raise RuntimeError(msg)
 
         # When connecting some port types together, Maya can create a unitConversion node.
         conversionFactor = CONVERSION_FACTOR_BY_TYPE.get((src.type, dst.type))
         if conversionFactor:
-            node_conversion = self.create_node('unitConversion')
-            port_input = self.get_node_port_by_name(node_conversion, 'input')
-            port_output = self.get_node_port_by_name(node_conversion, 'output')
-            port_factor = self.get_node_port_by_name(node_conversion, 'conversionFactor')
+            node_conversion = self.create_node("unitConversion")
+            port_input = self.get_node_port_by_name(node_conversion, "input")
+            port_output = self.get_node_port_by_name(node_conversion, "output")
+            port_factor = self.get_node_port_by_name(
+                node_conversion, "conversionFactor"
+            )
             port_factor.value = conversionFactor
             self.create_connection(src, port_input)
             self.create_connection(port_output, dst)
@@ -405,8 +427,8 @@ class MockedSession(collections.MutableMapping):
         :return: A port matching the requirements. None if nothing is found.
         :rtype: MockedPort or None
         """
-        assert (isinstance(node, MockedNode))
-        assert (isinstance(name, basestring))
+        assert isinstance(node, MockedNode)
+        assert isinstance(name, basestring)
 
         for port in self.ports_by_node.get(node, ()):
             if port.name == name:

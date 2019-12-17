@@ -12,8 +12,15 @@ cpp/build/*
 
 # py.test
 .cache
+
+# coverage
 .coverage
-.coveragerc
+.coverage.*
+coverage.xml
+htmlcov/
+
+# tox
+.tox/
 
 # hypothesis
 .hypothesis/

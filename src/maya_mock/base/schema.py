@@ -17,7 +17,7 @@ def get_namespace_parent(namespace):
     :return: The parent namespace
     :rtype: str
     """
-    return namespace.rsplit('.', 1)[0] if '.' in namespace else None
+    return namespace.rsplit(".", 1)[0] if "." in namespace else None
 
 
 def get_namespace_leaf(namespace):
@@ -32,7 +32,7 @@ def get_namespace_leaf(namespace):
     :param namespace:
     :return:
     """
-    return namespace.rsplit('.', 1)[-1]
+    return namespace.rsplit(".", 1)[-1]
 
 
 def iter_namespaces(namespaces):
@@ -94,7 +94,7 @@ class NodeTypeDef(object):
         self.abstract = abstract
 
     def __repr__(self):
-        return '<NodeTypeDef %r>' % self.type
+        return "<NodeTypeDef %r>" % self.type
 
     @property
     def data_local(self):
@@ -130,7 +130,7 @@ class NodeTypeDef(object):
         :param maya_mock.MockedSession session: The mocked session.
         :param maya_mock.MockedNode node: The node to add ports to.
         """
-        for port_name, port_data in self.data.iteritems():
+        for port_name, port_data in self.data.items():
             session.create_port(node, port_name, user_defined=False, **port_data)
 
     def to_dict(self):
@@ -139,10 +139,10 @@ class NodeTypeDef(object):
         :rtype: dict
         """
         return {
-            'namespace': self.namespace,
-            'attributes': self.data_local,
-            'classification': self.classification,
-            'abstract': self.abstract,
+            "namespace": self.namespace,
+            "attributes": self.data_local,
+            "classification": self.classification,
+            "abstract": self.abstract,
         }
 
     @classmethod
@@ -152,10 +152,10 @@ class NodeTypeDef(object):
         :param dict data:
         :return:
         """
-        namespace = data['namespace']
-        attributes = data['attributes']
-        classification = data['classification']
-        abstract = data.get('abstract', False)
+        namespace = data["namespace"]
+        attributes = data["attributes"]
+        classification = data["classification"]
+        abstract = data.get("abstract", False)
         return cls(namespace, attributes, classification, abstract=abstract)
 
 
@@ -176,7 +176,9 @@ class MockedSessionSchema(object):
         :type default_state: dict(str, str) or None
         """
         if nodes and not isinstance(nodes, dict):
-            raise ValueError("Cannot initialize a schema from %s: %r" % (type(nodes), nodes))
+            raise ValueError(
+                "Cannot initialize a schema from %s: %r" % (type(nodes), nodes)
+            )
         self.nodes = nodes or {}
         self.default_state = default_state or {}
 
@@ -194,14 +196,16 @@ class MockedSessionSchema(object):
         return self.nodes.get(node_type)
 
     def get_node_by_namespace(self, query):
-        return next((node for namespace, node in self.nodes.iteritems() if namespace == query), None)
+        return next(
+            (node for namespace, node in self.nodes.items() if namespace == query), None
+        )
 
     def get_known_node_types(self):
         """
         :return: All the known node types.
         :rtype: list[str]
         """
-        return self.nodes.keys()
+        return list(self.nodes.keys())
 
     @classmethod
     def generate(cls, fn_progress=None):
@@ -223,12 +227,19 @@ class MockedSessionSchema(object):
         # Determine known nodes and their ports
         node_types = cmds.allNodeTypes()
 
-        namespaces = sorted('.'.join(_maya.get_node_type_namespace(node_type)) for node_type in node_types)
+        namespaces = sorted(
+            ".".join(_maya.get_node_type_namespace(node_type))
+            for node_type in node_types
+        )
         for namespace in iter_namespaces(namespaces):
-            log.info('Registering %r' % namespace)
+            log.info("Registering %r" % namespace)
             node_type = get_namespace_leaf(namespace)
             parent_namespace = get_namespace_parent(namespace)
-            parent = inst.get_node_by_namespace(parent_namespace) if parent_namespace else None
+            parent = (
+                inst.get_node_by_namespace(parent_namespace)
+                if parent_namespace
+                else None
+            )
             data = _maya.get_node_attributes_info(node_type)
             classification = _maya.get_node_classification(node_type)
             node = NodeTypeDef(namespace, data, classification, parent=parent)
@@ -240,8 +251,11 @@ class MockedSessionSchema(object):
 
     def to_dict(self):
         return {
-            'nodes': {node_type: node_def.to_dict() for node_type, node_def in self.nodes.iteritems()},
-            'default_state': self.default_state,
+            "nodes": {
+                node_type: node_def.to_dict()
+                for node_type, node_def in self.nodes.items()
+            },
+            "default_state": self.default_state,
         }
 
     @classmethod
@@ -253,15 +267,15 @@ class MockedSessionSchema(object):
         :return: A new Schema instance
         :rtype: MockedSessionSchema
         """
-        nodes = data.get('nodes') or {}
-        default_state = data.get('default_state') or {}
+        nodes = data.get("nodes") or {}
+        default_state = data.get("default_state") or {}
 
-        nodes = {node_name: NodeTypeDef.from_dict(node_data) for node_name, node_data in nodes.iteritems()}
+        nodes = {
+            node_name: NodeTypeDef.from_dict(node_data)
+            for node_name, node_data in nodes.items()
+        }
 
-        inst = cls(
-            nodes=nodes,
-            default_state=default_state
-        )
+        inst = cls(nodes=nodes, default_state=default_state)
 
         return inst
 

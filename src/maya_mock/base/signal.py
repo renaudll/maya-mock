@@ -17,6 +17,7 @@ class Signal(object):
 
     :param args: The signature of the signal. This is the type of argument that we expect to pass. Unused
     """
+
     def __init__(self, *args):
         self._mutex = threading.RLock()
         self._funcs = set()
@@ -60,7 +61,9 @@ class Signal(object):
         self.block(True)
         try:
             for func in self._funcs:
-                LOG.debug(" Calling %s.%s", func.im_class.__name__, func.im_func.__name__)
+                LOG.debug(
+                    " Calling %s.%s", func.im_class.__name__, func.im_func.__name__
+                )
                 func(*args, **kwargs)
         finally:
             self._mutex.release()

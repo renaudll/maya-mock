@@ -1,7 +1,7 @@
 """Helper module to deal with name and dagpaths."""
 import re
 
-REGEX_INVALID_NODE_NAME_CHARS = re.compile(r'(^([0-9]|\W)+)|\W')
+REGEX_INVALID_NODE_NAME_CHARS = re.compile(r"^([0-9])|(?!A-Za-z0-9:_)")
 
 
 def conform_node_name(name):
@@ -14,7 +14,7 @@ def conform_node_name(name):
     :return: A conformed name.
     :rtype: str
     """
-    return REGEX_INVALID_NODE_NAME_CHARS.sub('', name)
+    return REGEX_INVALID_NODE_NAME_CHARS.sub("", name)
 
 
 def join(left, right):
@@ -26,9 +26,9 @@ def join(left, right):
     :return: A dagpath combining the left and right operant.
     :rtype:str
     """
-    dagpath = '%s|%s' % (left.strip('|'), right.strip('|'))
-    if left.startswith('|'):
-        dagpath = '|' + dagpath
+    dagpath = "%s|%s" % (left.strip("|"), right.strip("|"))
+    if left.startswith("|"):
+        dagpath = "|" + dagpath
     return dagpath
 
 
@@ -49,21 +49,21 @@ def pattern_to_regex(pattern):
     """
     # No pattern always match
     if pattern is None:
-        return '.*'
+        return ".*"
 
     # Replace '*' to it's regex equivalent
-    pattern = pattern.replace('*', r'[\w]*')
+    pattern = pattern.replace("*", r"[\w]*")
 
     # Escape pipe character (replace '|' by '\|')
-    pattern = pattern.replace('|', r'\|')
+    pattern = pattern.replace("|", r"\|")
 
     # If the pattern start with a pipe, only check absolute dagpaths
-    if pattern.startswith('|'):
-        pattern = '^' + pattern
+    if pattern.startswith("|"):
+        pattern = "^" + pattern
     else:
-        pattern = r'(^|.*\|)' + pattern
+        pattern = r"(^|.*\|)" + pattern
 
     # pattern += r'($|\|.*)'
-    pattern += r'$'
+    pattern += r"$"
 
     return pattern

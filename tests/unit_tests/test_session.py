@@ -28,7 +28,7 @@ def test_node_match_hyerarchy(session):
     """Assert that a node in a hyerarchy match it's own name."""
     node1 = session.create_node("transform", name="A")
     node2 = session.create_node("transform", name="B", parent=node1)
-    assert session.get_nodes_by_match('B') == [node2]
+    assert session.get_nodes_by_match("B") == [node2]
 
 
 def test_node_match_hyerarchy_parent(session):

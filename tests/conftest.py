@@ -1,7 +1,12 @@
 import os
 import pytest
 
-from maya_mock import MockedSession, MockedCmdsSession, MockedPymelSession, MockedSessionSchema
+from maya_mock import (
+    MockedSession,
+    MockedCmdsSession,
+    MockedPymelSession,
+    MockedSessionSchema,
+)
 
 
 @pytest.fixture
@@ -13,7 +18,11 @@ def schema_maya_2017():
     :return: An absolute file path
     :rtype: str
     """
-    return os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'resources', 'schema2017.json'))
+    return os.path.abspath(
+        os.path.join(
+            os.path.dirname(__file__), "..", "..", "resources", "schema2017.json"
+        )
+    )
 
 
 @pytest.fixture

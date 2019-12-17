@@ -10,6 +10,7 @@ class MockedPymelNode(object):
 
     See `documentation <https://help.autodesk.com/cloudhelp/2018/CHS/Maya-Tech-Docs/PyMel/generated/classes/pymel.core.general/pymel.core.general.PyNode.html#pymel.core.general.PyNode>`__ for details.
     """
+
     def __init__(self, pymel, node):
         self.__pymel = pymel
         self.__session = pymel.session
@@ -39,7 +40,9 @@ class MockedPymelNode(object):
             mock = pymel._port_to_attribute(port)
             return mock
 
-        raise AttributeError("{} has no attribute or method named '{}'".format(self, item))
+        raise AttributeError(
+            "{} has no attribute or method named '{}'".format(self, item)
+        )
 
     def __melobject__(self):
         return self._node.__melobject__()
@@ -76,7 +79,7 @@ class MockedPymelNode(object):
         session = self.__session
 
         # If the node is a tranform and checkShape is True, also check it's shape.
-        if self._node.type == 'transform' and checkShape:
+        if self._node.type == "transform" and checkShape:
             for shape in self.getShapes():
                 if session.get_node_port_by_name(shape, name):
                     return True
@@ -140,7 +143,11 @@ class MockedPymelNode(object):
         pymel = self.__pymel
         parent = self._node
         # TODO: Does ordering matter?
-        return [pymel._node_to_pynode(node) for node in session.nodes if node.parent is parent]
+        return [
+            pymel._node_to_pynode(node)
+            for node in session.nodes
+            if node.parent is parent
+        ]
 
     def getShapes(self):
         """
@@ -153,5 +160,9 @@ class MockedPymelNode(object):
         session = self.__session
         pymel = self.__pymel
         parent = self._node
-        nodes = [node for node in session.nodes if node.parent is parent and session and node.isShape()]
+        nodes = [
+            node
+            for node in session.nodes
+            if node.parent is parent and session and node.isShape()
+        ]
         return [pymel._node_to_pynode(node) for node in nodes]

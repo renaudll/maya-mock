@@ -10,6 +10,7 @@ class MockedPymelSession(MockedCmdsSession):
 
     :param maya_mock.MockedSession session: The mocked session for this adaptor.
     """
+
     def __init__(self, session):
         super(MockedPymelSession, self).__init__(session)
 
@@ -64,7 +65,7 @@ class MockedPymelSession(MockedCmdsSession):
         :return: A MockedPymelNode
         :rtype: MockedPymelNode
         """
-        assert(isinstance(val, basestring))
+        assert isinstance(val, basestring)
         node = self.session.get_node_by_match(val)
         if not node:
             return None

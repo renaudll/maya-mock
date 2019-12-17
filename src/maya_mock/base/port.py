@@ -1,6 +1,8 @@
 """A mocked Maya port"""
 import fnmatch
 
+import six
+
 from maya_mock.base.constants import EnumAttrTypes
 
 
@@ -9,8 +11,20 @@ class MockedPort(object):
     A mocked Maya port.
     """
 
-    def __init__(self, node, name, port_type='long', short_name=None, nice_name=None, value=0,
-                 readable=True, writable=True, interesting=True, user_defined=True, parent=None):
+    def __init__(
+        self,
+        node,
+        name,
+        port_type="long",
+        short_name=None,
+        nice_name=None,
+        value=0,
+        readable=True,
+        writable=True,
+        interesting=True,
+        user_defined=True,
+        parent=None,
+    ):
         """
         Create a Maya port mock.
 
@@ -30,20 +44,15 @@ class MockedPort(object):
         super(MockedPort, self).__init__()
 
         # Ensure provided name is unicode
-        if type(name) is str:
-            name = unicode(name)
-
-        if type(short_name) is str:
-            short_name = unicode(short_name)
-
-        if type(nice_name) is str:
-            nice_name = unicode(nice_name)
+        name = six.text_type(name) if name else None
+        short_name = six.text_type(short_name) if short_name else None
+        nice_name = six.text_type(nice_name) if nice_name else None
 
         self.node = node
         self.name = name
         self.short_name = short_name or name
         self.nice_name = nice_name or name
-        self._type = EnumAttrTypes(port_type)
+        self._type = getattr(EnumAttrTypes, port_type)
         self.value = value
         self.readable = readable
         self.writable = writable
@@ -64,7 +73,7 @@ class MockedPort(object):
         return '<Mocked Port "{}.{}">'.format(self.node.name, self.name)
 
     def __melobject__(self):
-        return '{}.{}'.format(self.node.__melobject__(), self.name)
+        return "{}.{}".format(self.node.__melobject__(), self.name)
 
     @property
     def type(self):
@@ -92,11 +101,11 @@ class MockedPort(object):
         # Match fully qualified dagpath
         # TODO: Make more solid
         dagpath = self.dagpath
-        if dagpath == '|' + pattern:
+        if dagpath == "|" + pattern:
             return True
 
         dagpath_short = self.dagpath_short
-        if dagpath_short == '|' + pattern:
+        if dagpath_short == "|" + pattern:
             return True
 
         port_name = self.name

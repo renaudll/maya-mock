@@ -1,4 +1,6 @@
 """A mocked node"""
+import six
+
 from maya_mock.base import naming
 from maya_mock.base.constants import SHAPE_CLASS
 
@@ -19,14 +21,15 @@ class MockedNode(object):
         super(MockedNode, self).__init__()
 
         # Ensure name is unicode as in Maya
-        if type(name) is str:
-            name = unicode(name)
+        name = six.text_type(name) if name else None
 
         self._session = session
         self.name = name
         self.type = node_type
         self._parent = None
-        self.ports = set()  # internal REGISTRY_DEFAULT of ports associated with the node
+        self.ports = (
+            set()
+        )  # internal REGISTRY_DEFAULT of ports associated with the node
         self.children = set()
 
         if parent:
@@ -78,7 +81,7 @@ class MockedNode(object):
                 pattern = naming.join(parent.name, pattern)
                 node = parent
             else:
-                pattern = '|' + pattern
+                pattern = "|" + pattern
                 break
 
         return pattern
@@ -89,7 +92,7 @@ class MockedNode(object):
         In Maya, the dagpath is the unique identifier for the resource.
         Return the fully qualified dagpath.
         """
-        prefix = self._parent.dagpath + '|' if self._parent else "|"
+        prefix = self._parent.dagpath + "|" if self._parent else "|"
         return "{}{}".format(prefix, self.name)
 
     @property
@@ -111,7 +114,9 @@ class MockedNode(object):
             parent.children.add(self)
         self._parent = parent
 
-    def get_port_by_name(self, name):  # TODO: Deprecate? This should be called from session instead
+    def get_port_by_name(
+        self, name
+    ):  # TODO: Deprecate? This should be called from session instead
         """
         Query a specific node port by it's name.
         :param str name: The name of the port to search.

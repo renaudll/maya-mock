@@ -41,8 +41,7 @@ def get_node_attributes_info(node_type):
         return result
 
     return {
-        attribute: get_attribute_info(node_type, attribute)
-        for attribute in attributes
+        attribute: get_attribute_info(node_type, attribute) for attribute in attributes
     }
 
 
@@ -61,9 +60,9 @@ def get_attribute_info(node_type, attribute):
     # Some attributes will return 'typed' as the type.
     # I don't know of any way of knowing in advance the type.
     # However for what we need, guessing might be enough.
-    if attr_type == 'typed':
-        if 'matrix' in attribute.lower():  # HACK
-            attr_type = 'matrix'
+    if attr_type == "typed":
+        if "matrix" in attribute.lower():  # HACK
+            attr_type = "matrix"
 
     attr_name_short = cmds.attributeQuery(attribute, type=node_type, shortName=True)
     attr_name_nice = cmds.attributeQuery(attribute, type=node_type, niceName=True)
@@ -73,12 +72,12 @@ def get_attribute_info(node_type, attribute):
     attr_writable = cmds.attributeQuery(attribute, type=node_type, writable=True)
 
     return {
-        'port_type': attr_type,
-        'short_name': attr_name_short,
-        'nice_name': attr_name_nice,
-        'parent': attr_parent,
-        'readable': attr_readable,
-        'writable': attr_writable,
+        "port_type": attr_type,
+        "short_name": attr_name_short,
+        "nice_name": attr_name_nice,
+        "parent": attr_parent,
+        "readable": attr_readable,
+        "writable": attr_writable,
     }
 
 
@@ -95,7 +94,9 @@ def get_node_classification(node_type):
     """
     classifications = cmds.getClassification(node_type)
     # Get the node identification tags
-    if len(classifications) != 1:  # This should not happen, but we don't know why getClassification return a list.
+    if (
+        len(classifications) != 1
+    ):  # This should not happen, but we don't know why getClassification return a list.
         raise Exception("Unexpected classification return value for %r" % node_type)
     classification = classifications[0]
 

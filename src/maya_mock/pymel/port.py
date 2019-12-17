@@ -20,10 +20,10 @@ class MockedPymelPort(object):
         return self.__melobject__()
 
     def __repr__(self):
-        return 'Attribute(%r)' % self.__melobject__()
+        return "Attribute(%r)" % self.__melobject__()
 
     def __melobject__(self):
-        return u'{}.{}'.format(self._port.node.__melobject__(), self._port.name)
+        return u"{}.{}".format(self._port.node.__melobject__(), self._port.name)
 
     def name(self):
         """

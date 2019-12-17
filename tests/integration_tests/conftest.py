@@ -4,7 +4,7 @@ Configure pytest so that all integration tests are run against their mock and th
 import pytest
 
 
-@pytest.fixture(scope='session', autouse=True)
+@pytest.fixture(scope="session", autouse=True)
 def init_maya():
     """
     Initialise a standalone Maya session
@@ -29,41 +29,43 @@ def maya_session(maya_cmds):
     maya_cmds.file(new=True, force=True)
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def maya_cmds():
     """
     Default maya.cmds module
     """
     from maya import cmds
+
     return cmds
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def maya_pymel():
     """
     Default pymel module
     """
     import pymel.core as pymel
+
     return pymel
 
 
-@pytest.fixture(params=['maya', 'mock'])
+@pytest.fixture(params=["maya", "mock"])
 def cmds(request):
     """
     Parametrized fixture that run the test both in mocked cmds and maya.cmds.
     """
-    if request.param == 'maya':
-        return request.getfixturevalue('maya_cmds')
-    elif request.param == 'mock':
-        return request.getfixturevalue('cmds_mock')
+    if request.param == "maya":
+        return request.getfixturevalue("maya_cmds")
+    elif request.param == "mock":
+        return request.getfixturevalue("cmds_mock")
 
 
-@pytest.fixture(params=['maya', 'mock'])
+@pytest.fixture(params=["maya", "mock"])
 def pymel(request):
     """
     Parametrized fixture that run
     """
-    if request.param == 'maya':
-        return request.getfixturevalue('maya_pymel')
-    elif request.param == 'mock':
-        return request.getfixturevalue('pymel_mock')
+    if request.param == "maya":
+        return request.getfixturevalue("maya_pymel")
+    elif request.param == "mock":
+        return request.getfixturevalue("pymel_mock")

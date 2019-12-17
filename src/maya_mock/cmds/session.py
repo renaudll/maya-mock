@@ -34,20 +34,20 @@ class MockedCmdsSession(object):
     def _conform_connection_ports(self, src, dst):
         port_src = self.session.get_port_by_match(src)
         if port_src is None:
-            raise RuntimeError('The source attribute %r cannot be found.' % src)
+            raise RuntimeError("The source attribute %r cannot be found." % src)
 
         port_dst = self.session.get_port_by_match(dst)
         if port_dst is None:
-            raise RuntimeError('The destination attribute %r cannot be found.' % dst)
+            raise RuntimeError("The destination attribute %r cannot be found." % dst)
 
         return port_src, port_dst
 
     def _handle_unimplemented_kwargs(self, kwargs):
         if kwargs:
-            raise NotImplementedError("Not implemented keyword argument%s: %s" % (
-                's' if len(kwargs) else '',
-                ', '.join(kwargs.keys())
-            ))
+            raise NotImplementedError(
+                "Not implemented keyword argument%s: %s"
+                % ("s" if len(kwargs) else "", ", ".join(kwargs.keys()))
+            )
 
     def addAttr(self, *objects, **kwargs):
         """
@@ -57,26 +57,30 @@ class MockedCmdsSession(object):
 
         """
         # Retrieve the attribute name.
-        name_long = kwargs.get('longName')
-        name_short = kwargs.get('shortName')
+        name_long = kwargs.get("longName")
+        name_short = kwargs.get("shortName")
         if not name_long and not name_short:
-            raise RuntimeError("New attribute needs either a long (-ln) or short (-sn) attribute name.")
+            raise RuntimeError(
+                "New attribute needs either a long (-ln) or short (-sn) attribute name."
+            )
 
-        default = kwargs.get('defaultValue', 0.0)
+        default = kwargs.get("defaultValue", 0.0)
 
         name = name_long or name_short
 
         port_type = (
-                kwargs.get('attributeType') or
-                kwargs.get('at') or
-                kwargs.get('dataType') or
-                kwargs.get('dt') or
-                'float'
+            kwargs.get("attributeType")
+            or kwargs.get("at")
+            or kwargs.get("dataType")
+            or kwargs.get("dt")
+            or "float"
         )
 
         for object_ in objects:
             node = self.session.get_node_by_match(object_)
-            self.session.create_port(node, name, port_type=port_type, short_name=name_short, value=default)
+            self.session.create_port(
+                node, name, port_type=port_type, short_name=name_short, value=default
+            )
 
     def allNodeTypes(self, **kwargs):
         """
@@ -102,7 +106,9 @@ class MockedCmdsSession(object):
 
         return name
 
-    def connectionInfo(self, dagpath, sourceFromDestination=False, destinationFromSource=False):
+    def connectionInfo(
+        self, dagpath, sourceFromDestination=False, destinationFromSource=False
+    ):
         """
         Get information about connection sources and destinations.
 
@@ -119,14 +125,21 @@ class MockedCmdsSession(object):
         port = self.session.get_port_by_match(dagpath)
         if sourceFromDestination and not destinationFromSource:
             return next(
-                (connection.src.__melobject__() for connection in self.session.get_port_input_connections(port)), ''
+                (
+                    connection.src.__melobject__()
+                    for connection in self.session.get_port_input_connections(port)
+                ),
+                "",
             )
         elif destinationFromSource and not sourceFromDestination:
-            return [connection.dst.__melobject__() for connection in self.session.get_port_output_connections(port)]
+            return [
+                connection.dst.__melobject__()
+                for connection in self.session.get_port_output_connections(port)
+            ]
         elif sourceFromDestination and destinationFromSource:
-            raise RuntimeError('You cannot specify more than one flag.')
+            raise RuntimeError("You cannot specify more than one flag.")
         else:  # elif not sourceFromDestination and not destinationFromSource
-            raise RuntimeError('You must specify exactly one flag.')
+            raise RuntimeError("You must specify exactly one flag.")
 
     def connectAttr(self, src, dst, **kwargs):
         """
@@ -143,8 +156,8 @@ class MockedCmdsSession(object):
         for connection in self.session.connections:
             if connection.src is src and connection.dst is dst:
                 # This also raise this warning to the script editor:
-                self.warning('%r is already connected to %r.' % (src, dst))
-                raise RuntimeError('Maya command error')
+                self.warning("%r is already connected to %r." % (src, dst))
+                raise RuntimeError("Maya command error")
 
         self.session.create_connection(src, dst)
 
@@ -175,9 +188,11 @@ class MockedCmdsSession(object):
         connection = self.session.get_connection_by_ports(src, dst)
 
         if not connection:
-            raise RuntimeError(u"There is no connection from '{}' to '{}' to disconnect".format(
-                src.__melobject__(), dst.__melobject__(),
-            ))
+            raise RuntimeError(
+                u"There is no connection from '{}' to '{}' to disconnect".format(
+                    src.__melobject__(), dst.__melobject__(),
+                )
+            )
 
         self.session.remove_connection(connection)
 
@@ -187,7 +202,7 @@ class MockedCmdsSession(object):
 
         See `documentation <https://download.autodesk.com/us/maya/2010help/CommandsPython/deleteAttr.html>`__ for details.
         """
-        attribute = kwargs.get('attribute') or kwargs.get('at')
+        attribute = kwargs.get("attribute") or kwargs.get("at")
 
         for query in queries:
             # If the provided value match a specific port, delete it.
@@ -196,7 +211,7 @@ class MockedCmdsSession(object):
                 self.session.remove_port(port)
                 continue
 
-            query = '.'.join((query, attribute))
+            query = ".".join((query, attribute))
             port = self.session.get_port_by_match(query)
             self.session.remove_port(port)
 
@@ -212,7 +227,7 @@ class MockedCmdsSession(object):
         """
         port = self.session.get_port_by_match(dagpath)
         if port is None:
-            raise ValueError('No object matches name: %s' % dagpath)
+            raise ValueError("No object matches name: %s" % dagpath)
         return port.value
 
     def listAttr(self, *objects, **kwargs):
@@ -221,7 +236,7 @@ class MockedCmdsSession(object):
 
         See `documentation <https://help.autodesk.com/cloudhelp/2017/ENU/Maya-Tech-Docs/Commands/listAttr.html>`__ for details.
         """
-        userDefined = kwargs.pop('userDefined', False)
+        userDefined = kwargs.pop("userDefined", False)
 
         self._handle_unimplemented_kwargs(kwargs)
 
@@ -230,12 +245,20 @@ class MockedCmdsSession(object):
                 return False
             return True
 
-        nodes = {node for object_ in objects for node in self.session.get_nodes_by_match(object_)}
-        ports = (port for node in nodes for port in self.session.ports_by_node.get(node, {}))
+        nodes = {
+            node
+            for object_ in objects
+            for node in self.session.get_nodes_by_match(object_)
+        }
+        ports = (
+            port for node in nodes for port in self.session.ports_by_node.get(node, {})
+        )
         ports = filter(_filter_port, ports)
         return [port.name for port in ports]
 
-    def ls(self, pattern=None, long=False, selection=False, type=None):  # TODO: Verify symbol name?
+    def ls(
+        self, pattern=None, long=False, selection=False, type=None
+    ):  # TODO: Verify symbol name?
         """
         List nodes
 
@@ -268,7 +291,9 @@ class MockedCmdsSession(object):
             else:
                 return n.__melobject__()
 
-        nodes = [node for node in self.session.iter_node_by_match(pattern) if _filter(node)]
+        nodes = [
+            node for node in self.session.iter_node_by_match(pattern) if _filter(node)
+        ]
         return [_get(node) for node in sorted(nodes)]
 
     def nodeType(self, name):
@@ -293,7 +318,9 @@ class MockedCmdsSession(object):
         :return: True if an existing object match the provided pattern, False otherwise.
         :rtype: bool
         """
-        return self.session.node_exist(pattern) or bool(self.session.get_port_by_match(pattern))
+        return self.session.node_exist(pattern) or bool(
+            self.session.get_port_by_match(pattern)
+        )
 
     def select(self, names):
         """
@@ -333,7 +360,7 @@ class MockedCmdsSession(object):
         :param bool world: Will unparent provided objects if True.
         :param kwargs: Any other keyword arguments are not implemented.
         """
-        world = kwargs.pop('world', False)
+        world = kwargs.pop("world", False)
 
         self._handle_unimplemented_kwargs(kwargs)
 

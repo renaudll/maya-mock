@@ -9,24 +9,25 @@ import pytest
 # TODO: test createNode_shape_twiceWithSameName
 # TODO: test_partial_dagpath (ex: ['transform1|a', 'transform2|b'])
 
+
 def test_createNode(cmds):
     """ Validate result when calling createNode without any name."""
-    cmds.createNode('transform')
-    assert cmds.objExists('transform1')
+    cmds.createNode("transform")
+    assert cmds.objExists("transform1")
 
 
 def test_createNode_multi(cmds):
     """ Validate result when calling createNode multiple times without any name."""
-    cmds.createNode('transform')
-    cmds.createNode('transform')
-    assert cmds.objExists('transform1')
-    assert cmds.objExists('transform2')
+    cmds.createNode("transform")
+    cmds.createNode("transform")
+    assert cmds.objExists("transform1")
+    assert cmds.objExists("transform2")
 
 
 def test_createNode_name(cmds):
     """ Validate result when calling createNode and specifying a name that don't exist."""
     cmds.createNode("transform", name="foo")
-    assert cmds.objExists('foo')
+    assert cmds.objExists("foo")
 
 
 def test_createNode_name_multi(cmds):
@@ -34,9 +35,16 @@ def test_createNode_name_multi(cmds):
     cmds.createNode("transform", name="foo")
     cmds.createNode("transform", name="foo")
     cmds.createNode("transform", name="foo")
-    assert cmds.objExists('foo')
-    assert cmds.objExists('foo1')
-    assert cmds.objExists('foo2')
+    assert cmds.objExists("foo")
+    assert cmds.objExists("foo1")
+    assert cmds.objExists("foo2")
+
+
+def test_createNode_name_with_namespace(cmds):
+    """ Validate result when calling createNode and using a name with a namespace."""
+    result = cmds.createNode("transform", name="foo:bar")
+    assert result == u"foo:bar"
+    assert cmds.objExists("foo:bar")
 
 
 def test_delete(cmds):
@@ -48,22 +56,22 @@ def test_delete(cmds):
 
 def test_ls_name(cmds):
     """ Validate we ca list object matching a name."""
-    cmds.createNode('transform', name='transformA')
-    assert cmds.ls('transformA') == ['transformA']
+    cmds.createNode("transform", name="transformA")
+    assert cmds.ls("transformA") == ["transformA"]
 
 
 def test_ls_name_pattern(cmds):
     """ Validate we can list object matching provided node name pattern."""
-    cmds.createNode('transform', name='transformA')
-    actual = cmds.ls('transform*')
-    assert actual == [u'transformA']
+    cmds.createNode("transform", name="transformA")
+    actual = cmds.ls("transform*")
+    assert actual == [u"transformA"]
 
 
 def test_ls_order(cmds):
     """ Validate we ls return object in alphabetical order even if it don't match creation order."""
-    cmds.createNode('transform', name='transformB')
-    cmds.createNode('transform', name='transformA')
-    assert cmds.ls('transform*') == ['transformA', 'transformB']
+    cmds.createNode("transform", name="transformB")
+    cmds.createNode("transform", name="transformA")
+    assert cmds.ls("transform*") == ["transformA", "transformB"]
 
 
 def test_ls_wildcard(cmds):
@@ -91,15 +99,15 @@ def test_ls_dag_clashes(cmds):
 
 def test_ls_long_dagnode(cmds):
     """ Validate we can use ls with the `long` karg on dagnodes."""
-    cmds.createNode('transform')
-    assert cmds.ls('transform*', type='transform', long=True) == [u'|transform1']
+    cmds.createNode("transform")
+    assert cmds.ls("transform*", type="transform", long=True) == [u"|transform1"]
 
 
-@pytest.mark.skip('Not implemented yet')
+@pytest.mark.skip("Not implemented yet")
 def test_ls_long_nondagnode(cmds):
     """ Validate we can use ls with the `long` kwarg on non dagnodes."""
-    cmds.createNode('network')
-    assert cmds.ls('network', type='network', long=True) == [u'network1']
+    cmds.createNode("network")
+    assert cmds.ls("network", type="network", long=True) == [u"network1"]
 
 
 def test_selection_empty_by_defaut(cmds):
@@ -110,49 +118,52 @@ def test_selection_empty_by_defaut(cmds):
 def test_selection_on_node_creationg(cmds):
     """ Validate that when a node is created it is automatically selected."""
     cmds.createNode("transform", name="foo")
-    assert cmds.ls(selection=True) == ['foo']
+    assert cmds.ls(selection=True) == ["foo"]
 
 
 def test_createNode_parent(cmds):
     """Validate that we can create node using the `parent` kwarg."""
-    cmds.createNode('transform', name='transformA')
-    cmds.createNode('transform', name='transformB', parent='transformA')
-    assert cmds.ls('transform*', type='transform', long=True) == ['|transformA', '|transformA|transformB']
+    cmds.createNode("transform", name="transformA")
+    cmds.createNode("transform", name="transformB", parent="transformA")
+    assert cmds.ls("transform*", type="transform", long=True) == [
+        "|transformA",
+        "|transformA|transformB",
+    ]
 
 
 def test_createNode_skipSelect(cmds):
     """Validate that when creating node using the `skipSelect` kwarg, the selected don't change."""
-    cmds.createNode("transform", name='a')
-    cmds.createNode("transform", name='b', skipSelect=True)
-    assert cmds.ls(selection=True) == ['a']
+    cmds.createNode("transform", name="a")
+    cmds.createNode("transform", name="b", skipSelect=True)
+    assert cmds.ls(selection=True) == ["a"]
 
 
 def test_select_clear(cmds):
     """ Ensure we are able to clear a selection."""
-    cmds.createNode('transform')
+    cmds.createNode("transform")
     cmds.select([])
     assert cmds.ls(selection=True) == []
 
 
 def test_select(cmds):
     """ Ensure we are able to select a node."""
-    cmds.createNode('transform')
+    cmds.createNode("transform")
     cmds.select([])
-    cmds.select(['transform1'])
-    assert cmds.ls(selection=True) == ['transform1']
+    cmds.select(["transform1"])
+    assert cmds.ls(selection=True) == ["transform1"]
 
 
 def test_addAttr(cmds):
     """Ensure we can create a port."""
-    node = cmds.createNode('transform')
-    cmds.addAttr(node, longName='foo')
+    node = cmds.createNode("transform")
+    cmds.addAttr(node, longName="foo")
 
-    assert cmds.objExists('transform1.foo')
+    assert cmds.objExists("transform1.foo")
 
 
 def test_addAttr_missingName(cmds):
     """Ensure a RuntimeError is raised when trying to use addAttr without the `longName` or `shortName` flag."""
-    node = cmds.createNode('transform')
+    node = cmds.createNode("transform")
     with pytest.raises(RuntimeError) as exception:
         cmds.addAttr(node)
     # TODO: Use absolute comparison, there's an issue with the last '\n' character.
@@ -161,59 +172,59 @@ def test_addAttr_missingName(cmds):
 
 def test_deleteAttr(cmds):
     """Ensure we can delete a dynamic attribute."""
-    node = cmds.createNode('transform')
-    cmds.addAttr(node, longName='foo')
-    cmds.deleteAttr(node, attribute='foo')
-    assert not cmds.objExists('transform1.foo')
+    node = cmds.createNode("transform")
+    cmds.addAttr(node, longName="foo")
+    cmds.deleteAttr(node, attribute="foo")
+    assert not cmds.objExists("transform1.foo")
 
 
 def test_getAttr_defaultValue(cmds):
     """Ensure we can query the value of a port."""
-    node = cmds.createNode('transform')
-    cmds.addAttr(node, longName='foo', defaultValue=1.0)
-    assert cmds.getAttr('transform1.foo') == 1.0
+    node = cmds.createNode("transform")
+    cmds.addAttr(node, longName="foo", defaultValue=1.0)
+    assert cmds.getAttr("transform1.foo") == 1.0
 
 
 def test_getAttr_invalid_path(cmds):
     """Ensure we fail the same way as Maya when calling getAttr with a non-existent dag path."""
-    node = cmds.createNode('transform')
+    node = cmds.createNode("transform")
     with pytest.raises(ValueError) as exception:
-        cmds.getAttr('transform1.a_missing_attribute')
-    assert exception.match('No object matches name: transform1.a_missing_attribute')
+        cmds.getAttr("transform1.a_missing_attribute")
+    assert exception.match("No object matches name: transform1.a_missing_attribute")
 
 
 def test_getAttr_shortName(cmds):
     """Ensure we can call getAttr using a port short name."""
-    node = cmds.createNode('transform')
-    cmds.addAttr(node, longName='fooLong', shortName='fooShort', defaultValue=1.0)
-    assert cmds.getAttr('transform1.fooShort') == 1.0
+    node = cmds.createNode("transform")
+    cmds.addAttr(node, longName="fooLong", shortName="fooShort", defaultValue=1.0)
+    assert cmds.getAttr("transform1.fooShort") == 1.0
 
 
 def test_getAttr_niceName(cmds):
     """Ensure that like Maya, we can't call getAttr from a port using it's nice name."""
-    node = cmds.createNode('transform')
-    cmds.addAttr(node, longName='fooLong', niceName='fooNice', defaultValue=1.0)
+    node = cmds.createNode("transform")
+    cmds.addAttr(node, longName="fooLong", niceName="fooNice", defaultValue=1.0)
     with pytest.raises(ValueError) as exception:
-        cmds.getAttr('transform1.fooNice')
-    assert exception.match('No object matches name: transform1.fooNice')
+        cmds.getAttr("transform1.fooNice")
+    assert exception.match("No object matches name: transform1.fooNice")
 
 
 def test_setAttr(cmds):
     """Ensure we can change the value of a port."""
-    node = cmds.createNode('transform')
-    cmds.addAttr(node, longName='foo')
-    cmds.setAttr('transform1.foo', 20)
-    assert cmds.getAttr('transform1.foo') == 20
+    node = cmds.createNode("transform")
+    cmds.addAttr(node, longName="foo")
+    cmds.setAttr("transform1.foo", 20)
+    assert cmds.getAttr("transform1.foo") == 20
 
 
 def test_listAttr(cmds):
     """Ensure listAttr work as expected."""
-    node = cmds.createNode('transform')
-    cmds.addAttr(node, longName='foo')
-    assert cmds.listAttr(node, userDefined=True) == ['foo']
+    node = cmds.createNode("transform")
+    cmds.addAttr(node, longName="foo")
+    assert cmds.listAttr(node, userDefined=True) == ["foo"]
 
 
 def test_nodeType(cmds):
     """Ensure nodeType work as expected."""
-    node = cmds.createNode('transform')
-    assert cmds.nodeType(node) == 'transform'
+    node = cmds.createNode("transform")
+    assert cmds.nodeType(node) == "transform"

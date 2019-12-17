@@ -17,13 +17,13 @@ def _patched_sys_modules(data):
     old_data = {key: sys.modules.get(key) for key in data}
 
     # Patch sys.modules
-    for key, val in data.iteritems():
+    for key, val in data.items():
         sys.modules[key] = val
 
     yield
 
     # Restore sys.modules
-    for key, val in old_data.iteritems():
+    for key, val in old_data.item():
         if val is None:
             sys.modules.pop(key)
         else:
@@ -36,7 +36,7 @@ def _create_cmds_module_mock(cmds):
     """
     import mock
 
-    kwargs = {'cmds': cmds}
+    kwargs = {"cmds": cmds}
     module_maya = mock.MagicMock(**kwargs)
     return module_maya
 
@@ -56,11 +56,15 @@ def mock_cmds(session):
     :return: A context
     :rtype: contextmanager.GeneratorContextManager
     """
-    cmds = session if isinstance(session, MockedCmdsSession) else MockedCmdsSession(session)
+    cmds = (
+        session
+        if isinstance(session, MockedCmdsSession)
+        else MockedCmdsSession(session)
+    )
 
     # Prepare sys.modules patch
     module_maya = _create_cmds_module_mock(cmds)
-    new_sys = {'maya': module_maya, 'maya.cmds': cmds}
+    new_sys = {"maya": module_maya, "maya.cmds": cmds}
 
     with _patched_sys_modules(new_sys):
         yield cmds
@@ -71,16 +75,17 @@ def _create_pymel_module_mock(pymel):
     import mock
 
     kwargs = {
-        'core.PyNode': MockedPymelNode,
-        'core.Attribute': MockedPymelPort,
+        "core.PyNode": MockedPymelNode,
+        "core.Attribute": MockedPymelPort,
     }
     for attr in dir(pymel):
         if not attr.startswith("_"):
-            kwargs['core.{}'.format(attr)] = getattr(pymel, attr)
+            kwargs["core.{}".format(attr)] = getattr(pymel, attr)
 
     module_pymel = mock.MagicMock(**kwargs)
 
     return module_pymel
+
 
 @contextmanager
 def mock_pymel(session):
@@ -99,15 +104,19 @@ def mock_pymel(session):
     """
     # Context manager that ensure that when trying to import pymel it import a mock.
     # Useful when using external methods that don't expect the mock.
-    pymel = session if isinstance(session, MockedPymelSession) else MockedPymelSession(session)
+    pymel = (
+        session
+        if isinstance(session, MockedPymelSession)
+        else MockedPymelSession(session)
+    )
 
     # Prepare sys.modules patch
     module_pymel = _create_pymel_module_mock(pymel)
     sys_data = {
-        'pymel': module_pymel,
-        'pymel.core': module_pymel.core,
-        'pymel.core.PyNode': module_pymel.core.PyNode,
-        'pymel.core.Attribute': module_pymel.core.Attribute,
+        "pymel": module_pymel,
+        "pymel.core": module_pymel.core,
+        "pymel.core.PyNode": module_pymel.core.PyNode,
+        "pymel.core.Attribute": module_pymel.core.Attribute,
     }
 
     with _patched_sys_modules(sys_data):

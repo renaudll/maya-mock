@@ -8,9 +8,10 @@ from maya import cmds, standalone
 from maya_mock import MockedSession, MockedCmdsSession, MockedSessionSchema
 
 from maya_mock.base import constants
+
 standalone.initialize()
 
-schema_file = os.path.join(constants.TEST_RESOURCE_DIR, 'schema2017.json')
+schema_file = os.path.join(constants.TEST_RESOURCE_DIR, "schema2017.json")
 schema = MockedSessionSchema.from_json_file(schema_file)
 
 # schema = MockedSessionSchema.generate()
@@ -26,13 +27,15 @@ def _dump(cmds):
     node_names = cmds.ls()
     for node_name in node_names:
         attrs = set(cmds.listAttr(node_name))
-        attrs = {attr.split('.')[-1] for attr in attrs}  # HACK: We currently don't support child attributes...
+        attrs = {
+            attr.split(".")[-1] for attr in attrs
+        }  # HACK: We currently don't support child attributes...
         result[node_name] = attrs
     return result
 
 
 class MayaComparison(RuleBasedStateMachine):
-    NODES = Bundle('NODES')
+    NODES = Bundle("NODES")
 
     def __init__(self):
         super(MayaComparison, self).__init__()
@@ -70,11 +73,11 @@ class MayaComparison(RuleBasedStateMachine):
     @rule(target=NODES, name=strategy_node_name, type_=strategy_node_type)
     def create_node(self, name, type_):
         before = {node.dagpath for node in self.session.nodes}
-        self._cmd('createNode', type_, name=name)
+        self._cmd("createNode", type_, name=name)
         after = {node.dagpath for node in self.session.nodes}
         return after - before
 
-    # # @precondition(lambda self: self._cmd['ls'])  # Only if nodes are remaining
+    # @precondition(lambda self: self._cmd['ls'])  # Only if nodes are remaining
     # @rule(name=consumes(NODES))
     # def delete_node(self, name):
     #     before = {node.dagpath for node in self.session.nodes}
@@ -91,5 +94,6 @@ class MayaComparison(RuleBasedStateMachine):
         assert set(actual.keys()) == set(expected.keys())
         assert actual == expected
 
+
 # TODO: Uncomment to run
-# TestDBComparison = MayaComparison.TestCase
+TestDBComparison = MayaComparison.TestCase
