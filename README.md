@@ -2,7 +2,7 @@
 
 [![Actions](https://github.com/renaudll/maya-mock/workflows/tests/badge.svg)](https://github.com/renaudll/maya-mock/actions)
 [![codecov](https://codecov.io/gh/renaudll/maya-mock/branch/master/graph/badge.svg)](https://codecov.io/gh/renaudll/maya-mock)
-
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 A mock for Autodesk Maya it's `cmds` and `pymel` API. 
 
