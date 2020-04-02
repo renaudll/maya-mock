@@ -5,12 +5,12 @@ class MockedPymelPort(object):
     """
     Port adaptor for a pymel.Attribute object.
 
-    See `documentation <https://help.autodesk.com/cloudhelp/2018/CHS/Maya-Tech-Docs/PyMel/generated/classes/pymel.core.general/pymel.core.general.Attribute.html#pymel.core.general.Attribute>`__ for details.
+    https://help.autodesk.com/cloudhelp/2018/CHS/Maya-Tech-Docs/PyMel/generated/classes/pymel.core.general/pymel.core.general.Attribute.html#pymel.core.general.Attribute
     """
 
     def __init__(self, session, port):
         """
-        :param session:
+        :param maya_mock.MockedSession session: A mocked session
         :param maya_mock.MockedPort, port: The port to translate.
         """
         self.__session = session
@@ -27,19 +27,44 @@ class MockedPymelPort(object):
 
     def name(self):
         """
-        :return: The name of the attribute (plug)
+        :return: The attribute name
         :rtype: str
         """
         return self.__melobject__()
 
-    def longName(self):
+    def longName(self):  # pylint: disable=invalid-name
+        """
+        https://help.autodesk.com/cloudhelp/2017/ENU/Maya-Tech-Docs/PyMel/generated/classes/pymel.core.general/pymel.core.general.Attribute.html#pymel.core.general.Attribute.longName
+
+        :return: The attribute long name
+        :rtype: str
+        """
         return self._port.name
 
-    def shortName(self):
+    def shortName(self):  # pylint: disable=invalid-name
+        """
+        https://help.autodesk.com/cloudhelp/2017/ENU/Maya-Tech-Docs/PyMel/generated/classes/pymel.core.general/pymel.core.general.Attribute.html#pymel.core.general.Attribute.shortName
+
+        :return: The attribute short name
+        :rtype: str
+        """
         return self._port.short_name
 
     def get(self):
+        """
+        https://help.autodesk.com/cloudhelp/2017/ENU/Maya-Tech-Docs/PyMel/generated/classes/pymel.core.general/pymel.core.general.Attribute.html#pymel.core.general.Attribute.get
+
+        :return: The value attribute value
+        :rtype: object
+        """
         return self._port.value
 
     def set(self, value):
+        """
+        Set the attribute value
+
+        https://help.autodesk.com/cloudhelp/2017/ENU/Maya-Tech-Docs/PyMel/generated/classes/pymel.core.general/pymel.core.general.Attribute.html#pymel.core.general.Attribute.set
+
+        :param object value: The attribute new value
+        """
         self._port.value = value

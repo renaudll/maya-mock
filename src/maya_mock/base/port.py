@@ -3,10 +3,13 @@ import fnmatch
 
 import six
 
+from maya_mock.base import _abstract
 from maya_mock.base.constants import EnumAttrTypes
 
 
-class MockedPort(object):
+class MockedPort(
+    _abstract.BaseDagObject
+):  # pylint: disable=too-many-instance-attributes
     """
     A mocked Maya port.
     """
@@ -24,7 +27,7 @@ class MockedPort(object):
         interesting=True,
         user_defined=True,
         parent=None,
-    ):
+    ):  # pylint: disable=too-many-arguments
         """
         Create a Maya port mock.
 
@@ -37,7 +40,7 @@ class MockedPort(object):
         :param readable: 1
         :param writable:
         :param interesting:
-        :param bool user_defined: True if the port is not standard for this type of node. False otherwise.
+        :param bool user_defined: Is the port is not standard for this type of node?
         :param parent: An optional parent to the attribute. Parent need to exist.
         :type parent: str or None
         """
@@ -59,15 +62,6 @@ class MockedPort(object):
         self.interesting = interesting
         self.user_defined = user_defined
         self.parent = parent
-
-    def __eq__(self, other):
-        return hash(self) == hash(other)
-
-    def __ne__(self, other):
-        return hash(self) != hash(other)
-
-    def __hash__(self):
-        return hash(self.dagpath)
 
     def __repr__(self):
         return '<Mocked Port "{}.{}">'.format(self.node.name, self.name)

@@ -1,10 +1,9 @@
-# coding: utf-8
 """
-Unit-tests for maya_mock pymel implementation.
+Test cases for MockedPymelSession
 """
 
 
-def test_createNode(pymel):
+def test_createNode(pymel):  # pylint: disable=invalid-name
     """Validate that the `createNode` function work as expected."""
     node = pymel.createNode("transform")
     assert isinstance(node, pymel.PyNode)

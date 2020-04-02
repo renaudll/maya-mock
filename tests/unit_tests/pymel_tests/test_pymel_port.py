@@ -1,5 +1,7 @@
-# coding: utf-8
-"""Unit-tests for our pymel.general.Attribute mock."""
+"""
+Test cases for MockedPymelPort
+"""
+# pylint: disable=redefined-outer-name
 import six
 
 import pytest
@@ -14,54 +16,54 @@ def port(pymel):
     return port
 
 
-def test_port_name(port):
+def test_name(port):
     """Validate the `name` method behavior."""
     actual = port.name()
     assert actual == "transform1.fooLong"
-    assert type(actual) is six.text_type
+    assert isinstance(actual, six.text_type)
 
 
-def test_port_longName(port):
+def testlongName(port):  # pylint: disable=invalid-name
     """Validate the `longName` method behavior."""
     actual = port.longName()
     assert actual == "fooLong"
-    assert type(actual) is six.text_type
+    assert isinstance(actual, six.text_type)
 
 
-def test_port_shortName(port):
+def testshortName(port):  # pylint: disable=invalid-name
     """Validate the `shortName` method behavior."""
     actual = port.shortName()
     assert actual == "fooShort"
-    assert type(actual) is six.text_type
+    assert isinstance(actual, six.text_type)
 
 
-def test_port_get(port):
+def test_get(port):
     """Validate the `get` method behavior."""
     assert port.get() == 0.0
 
 
-def test_port_set(port):
+def test_set(port):
     """Validate the `set` method behavior."""
     port.set(10.0)
     assert port.get() == 10.0
 
 
-def test_port__melobject__(port):
+def test_melobject__(port):
     """Validate the `__melobject__` magic method behavior."""
     actual = port.__melobject__()
     assert actual == "transform1.fooLong"
-    assert type(actual) is six.text_type
+    assert isinstance(actual, six.text_type)
 
 
-def test_port__str__(port):
+def test_str__(port):
     """Validate the `__str__` magic method behavior."""
     actual = str(port)
     assert actual == "transform1.fooLong"
-    assert type(actual) is str
+    assert isinstance(actual, str)
 
 
-def test_port__repr__(port):
+def test_repr__(port):
     """Validate the `__repr__` magic method behavior."""
     actual = repr(port)
     assert actual == "Attribute(u'transform1.fooLong')"
-    assert type(actual) is str
+    assert isinstance(actual, str)

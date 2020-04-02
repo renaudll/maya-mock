@@ -1,7 +1,9 @@
 """Helper module to deal with name and dagpaths."""
 import re
 
-REGEX_INVALID_NODE_NAME_CHARS = re.compile(r"^([0-9])|(?!A-Za-z0-9:_)")
+from maya_mock.base.constants import BLACKLISTED_NODE_NAMES
+
+_REGEX_INVALID_NODE_NAME_CHARS = re.compile(r"^([0-9])|(?!A-Za-z0-9:_)")
 
 
 def conform_node_name(name):
@@ -14,7 +16,7 @@ def conform_node_name(name):
     :return: A conformed name.
     :rtype: str
     """
-    return REGEX_INVALID_NODE_NAME_CHARS.sub("", name)
+    return _REGEX_INVALID_NODE_NAME_CHARS.sub("", name)
 
 
 def join(left, right):
@@ -33,7 +35,7 @@ def join(left, right):
 
 
 def pattern_to_regex(pattern):
-    """
+    r"""
     Convert a node dagpath to a regular expression (regex).
 
     Some example would be:
@@ -67,3 +69,19 @@ def pattern_to_regex(pattern):
     pattern += r"$"
 
     return pattern
+
+
+def is_valid_node_name(name):
+    """
+    Determine if a name is valid for a node.
+
+    A node name:
+    - Cannot be empty
+    - Cannot start with a number
+    - Cannot match any blacklisted pattern
+
+    :param str name: The name to check.
+    :return: True if the name is valid. False otherwise.
+    :rtype: bool
+    """
+    return name and name not in BLACKLISTED_NODE_NAMES

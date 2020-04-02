@@ -1,13 +1,14 @@
-import os
+"""
+Test cases for MockedCmdsSession connection related methods
+"""
 import itertools
 
 import pytest
 
 from maya_mock.base.constants import EnumAttrTypes, CONVERSION_FACTOR_BY_TYPE
-from maya_mock.base.schema import MockedSessionSchema
 
 # src: http://download.autodesk.com/us/maya/2010help/CommandsPython/addAttr.html
-_g_addAttr_kwargs_map = {
+_ADDATTR_KWARGS_MAP = {
     EnumAttrTypes.bool: {"at": "double"},
     EnumAttrTypes.long: {"at": "long"},
     EnumAttrTypes.short: {"at": "short"},
@@ -46,34 +47,19 @@ _g_addAttr_kwargs_map = {
     # 'lattice': {'dt': 'lattice'},
     # 'pointArray': {'dt': 'pointArray'}
 }
-_g_addAttr_kwargs_map = [
-    (key, val) for key, val in _g_addAttr_kwargs_map.items()
-]  # convert to tuple
-
-
-@pytest.fixture
-def schema_file():
-    return os.path.abspath(
-        os.path.join(
-            os.path.dirname(__file__), "..", "..", "resources", "schema2017.json"
-        )
-    )
-
-
-@pytest.fixture
-def schema(schema_file):
-    return MockedSessionSchema.from_json_file(schema_file)
+_ADDATTR_KWARGS_MAP = tuple(_ADDATTR_KWARGS_MAP.items())
 
 
 @pytest.fixture
 def connection(cmds):
+    """Create a connection from "transform1.src" to "transform1.dst". """
     node = cmds.createNode("transform")
     cmds.addAttr(node, longName="src")
     cmds.addAttr(node, longName="dst")
     cmds.connectAttr("transform1.src", "transform1.dst")
 
 
-def test_connectAttr(cmds):
+def test_connectAttr(cmds):  # pylint: disable=invalid-name
     """Ensure we can create a connection."""
     node = cmds.createNode("transform")
     cmds.addAttr(node, longName="src")
@@ -91,8 +77,11 @@ def test_connectAttr(cmds):
     assert cmds.connectionInfo("transform1.dst", destinationFromSource=True) == []
 
 
-def test_connectAttr_missing_src(cmds):
-    """Ensure proper behavior when trying to create a connection for a non-existent source."""
+def test_connectAttr_missing_src(cmds):  # pylint: disable=invalid-name
+    """
+    Ensure proper behavior when trying to create a connection
+    for a non-existent source.
+    """
     node = cmds.createNode("transform")
     cmds.addAttr(node, longName="dst")
 
@@ -101,8 +90,11 @@ def test_connectAttr_missing_src(cmds):
     assert exception.match("The source attribute 'transform1.src' cannot be found.")
 
 
-def test_connectAttr_missing_dst(cmds):
-    """Ensure proper behavior when trying to create a connection from a non-existent destination."""
+def test_connectAttr_missing_dst(cmds):  # pylint: disable=invalid-name
+    """
+    Ensure proper behavior when trying to create
+    a connection from a non-existent destination.
+    """
     node = cmds.createNode("transform")
     cmds.addAttr(node, longName="src")
     with pytest.raises(RuntimeError) as exception:
@@ -112,8 +104,11 @@ def test_connectAttr_missing_dst(cmds):
     )
 
 
-def test_connectAttr_existing_connection(cmds):
-    """Ensure that trying to create a connection using already connection nodes raise a RuntimeError."""
+def test_connectAttr_existing_connection(cmds):  # pylint: disable=invalid-name
+    """
+    Ensure that trying to create a connection
+    using already connection nodes raise a RuntimeError.
+    """
     node = cmds.createNode("transform")
     cmds.addAttr(node, longName="src")
     cmds.addAttr(node, longName="dst")
@@ -123,7 +118,7 @@ def test_connectAttr_existing_connection(cmds):
     assert exception.match("Maya command error")
 
 
-def test_connectAttr_incompatible_ports(cmds):
+def test_connectAttr_incompatible_ports(cmds):  # pylint: disable=invalid-name
     """Ensure that trying to connect two incompatible ports result in a RuntimeError."""
     node = cmds.createNode("transform")
     cmds.addAttr(node, longName="src", at="char")
@@ -136,8 +131,11 @@ def test_connectAttr_incompatible_ports(cmds):
 
 
 @pytest.mark.usefixtures("connection")
-def test_disconnectAttr(cmds):
-    """Ensure that trying to create a connection using already connection nodes raise a RuntimeError."""
+def test_disconnectAttr(cmds):  # pylint: disable=invalid-name
+    """
+    Ensure that trying to create a connection
+    using already connection nodes raise a RuntimeError.
+    """
     cmds.disconnectAttr("transform1.src", "transform1.dst")
     assert cmds.connectionInfo("transform1.src", destinationFromSource=True) == []
     assert cmds.connectionInfo("transform1.src", sourceFromDestination=True) == ""
@@ -146,7 +144,7 @@ def test_disconnectAttr(cmds):
 
 
 @pytest.mark.usefixtures("connection")
-def test_connectionInfo_no_flag(cmds):
+def test_connectionInfo_no_flag(cmds):  # pylint: disable=invalid-name
     """Ensure connectionInfo error out correctly if no flags are provided."""
     with pytest.raises(RuntimeError) as exception:
         cmds.connectionInfo("transform1.src")
@@ -154,7 +152,7 @@ def test_connectionInfo_no_flag(cmds):
 
 
 @pytest.mark.usefixtures("connection")
-def test_connectionInfo_both_flag_at_once(cmds):
+def test_connectionInfo_both_flag_at_once(cmds):  # pylint: disable=invalid-name
     """Ensure connectionInfo error out correctly if both flags are provided at once."""
     with pytest.raises(RuntimeError) as exception:
         cmds.connectionInfo(
@@ -164,7 +162,8 @@ def test_connectionInfo_both_flag_at_once(cmds):
 
 
 @pytest.mark.usefixtures("connection")
-def test_disconnectAttr_no_connection(cmds):
+def test_disconnectAttr_no_connection(cmds):  # pylint: disable=invalid-name
+    """Ensure disconnecAttr raise when trying to disconnect on a non-existent connection. """
     with pytest.raises(RuntimeError) as exception:
         cmds.disconnectAttr(
             "transform1.dst", "transform1.src"
@@ -185,8 +184,12 @@ def test_disconnectAttr_no_connection(cmds):
         )
     )
 )
-def test_connect_different_types(request, cmds, maya_session, src_data, dst_data):
-    """Assert that when connecting a double port to a doubleAngle port a unitConversion is created."""
+@pytest.mark.usefixtures("src_data", "dst_data", "maya_session")
+def test_connect_different_types(request, cmds):
+    """
+    Assert that when connecting a double port to
+    a doubleAngle port a unitConversion is created.
+    """
     # Hack: Need to determine why the object sometimes exist...
     for obj in cmds.ls(type="transform") + cmds.ls(type="unitConversion"):
         cmds.delete(obj)
@@ -194,8 +197,8 @@ def test_connect_different_types(request, cmds, maya_session, src_data, dst_data
     cmds.delete("unitConversion*")
 
     type_src, type_dst = request.param
-    src_kwargs = _g_addAttr_kwargs_map[type_src]
-    dst_kwargs = _g_addAttr_kwargs_map[type_dst]
+    src_kwargs = _ADDATTR_KWARGS_MAP[type_src]
+    dst_kwargs = _ADDATTR_KWARGS_MAP[type_dst]
 
     port_src_name = "testSrc" + type_src.value
     port_dst_name = "testDst" + type_dst.value

@@ -1,3 +1,7 @@
+"""
+Test cases for MockedSessionSchema
+"""
+# pylint: disable=redefined-outer-name
 import pytest
 from maya_mock import MockedSessionSchema
 from maya_mock.base.schema import NodeTypeDef

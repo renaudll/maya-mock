@@ -1,20 +1,27 @@
+"""
+Session class which hold informations about current nodes, ports and connections.
+"""
 import collections
 import itertools
 import logging
 import re
 import string
-from collections import defaultdict
+
+import six
 
 from maya_mock.base import naming
 from maya_mock.base.connection import MockedConnection
 from maya_mock.base.constants import (
-    BLACKLISTED_NODE_NAMES,
     SHAPE_CLASS,
     DEFAULT_PREFIX_BY_SHAPE_TYPE,
     CONVERSION_FACTOR_BY_TYPE,
     IMPOSSIBLE_CONNECTIONS,
 )
-from maya_mock.base.naming import pattern_to_regex, conform_node_name
+from maya_mock.base.naming import (
+    pattern_to_regex,
+    conform_node_name,
+    is_valid_node_name,
+)
 from maya_mock.base.node import MockedNode
 from maya_mock.base.port import MockedPort
 from maya_mock.base.schema import MockedSessionSchema
@@ -23,7 +30,9 @@ from maya_mock.base.signal import Signal
 LOG = logging.getLogger(__name__)
 
 
-class MockedSession(collections.MutableMapping):
+class MockedSession(
+    collections.MutableMapping
+):  # pylint: disable=too-many-public-methods
     """
     Collection of nodes, ports and connections.
 
@@ -45,7 +54,7 @@ class MockedSession(collections.MutableMapping):
         self.ports = set()
         self.connections = set()
         self.selection = set()
-        self.ports_by_node = defaultdict(set)
+        self.ports_by_node = collections.defaultdict(set)
         self.schema = schema
 
         if schema:
@@ -94,20 +103,6 @@ class MockedSession(collections.MutableMapping):
         """
         return bool(self.get_node_by_match(dagpath, strict=False))
 
-    def _is_name_valid(self, name):
-        """
-        Determine if a name is valid for a node.
-        A node name:
-        - Cannot be empty
-        - Cannot start with a number
-        - Cannot match any blacklisted pattern
-
-        :param str name: The name to check.
-        :return: True if the name is valid. False otherwise.
-        :rtype: bool
-        """
-        return name and name not in BLACKLISTED_NODE_NAMES
-
     def _unique_name(self, prefix, parent=None):
         """
         Resolve a unique name from a provided base suffix.
@@ -116,10 +111,11 @@ class MockedSession(collections.MutableMapping):
         :param MockedNode parent:
         :return:
         """
-        for i in itertools.count(1):
-            name = "{}{}".format(prefix, i)
+        counter = itertools.count(1)
+        while True:
+            name = "{}{}".format(prefix, next(counter))
             dagpath = naming.join(parent.dagpath, name) if parent else "|" + name
-            if self._is_name_valid(name) and not self.node_exist(dagpath):
+            if is_valid_node_name(name) and not self.node_exist(dagpath):
                 return name
 
     def get_node_by_name(self, name):
@@ -139,8 +135,6 @@ class MockedSession(collections.MutableMapping):
     def get_nodes_by_match(self, pattern, strict=True):
         """
         :param str pattern: The pattern to match.
-        :param parent: If defined, only nodes child of the provided parent node will be checked.
-        :type parent: MockedNode or None
         :param bool strict: If True, a ValueError will be raised if no node are found.
         :return: A node or None if no match was found.
         :rtype: MockedNode or None
@@ -216,7 +210,8 @@ class MockedSession(collections.MutableMapping):
             None,
         )
 
-    def warning(self, msg):
+    @staticmethod
+    def warning(msg):
         """
         Print a warning message.
         Similar to cmds.warning
@@ -248,7 +243,8 @@ class MockedSession(collections.MutableMapping):
                 self.warning("Removing invalid characters from name.")
                 name = name_conformed
 
-        # Handle the case where the resulting name is empty which can happen if invalid characters are found.
+        # Handle the case where the resulting name is empty
+        # which can happen if invalid characters are found.
         # ex: cmds.createNode('transform', name='0')
         if name == "":
             raise RuntimeError(u"New name has no legal characters.\n")
@@ -269,7 +265,7 @@ class MockedSession(collections.MutableMapping):
             # Next, if the name is invalid or clash with another node dagpath,
             # we'll need to add a number suffix.
             dagpath = "%s|%s" % (parent.dagpath, name) if parent else "|" + name
-            if not self._is_name_valid(name) or self.node_exist(dagpath):
+            if not is_valid_node_name(name) or self.node_exist(dagpath):
                 name = name.rstrip(string.digits)
                 name = self._unique_name(name, parent=parent)
 
@@ -380,15 +376,15 @@ class MockedSession(collections.MutableMapping):
             raise RuntimeError(msg)
 
         # When connecting some port types together, Maya can create a unitConversion node.
-        conversionFactor = CONVERSION_FACTOR_BY_TYPE.get((src.type, dst.type))
-        if conversionFactor:
+        factor = CONVERSION_FACTOR_BY_TYPE.get((src.type, dst.type))
+        if factor:
             node_conversion = self.create_node("unitConversion")
             port_input = self.get_node_port_by_name(node_conversion, "input")
             port_output = self.get_node_port_by_name(node_conversion, "output")
             port_factor = self.get_node_port_by_name(
                 node_conversion, "conversionFactor"
             )
-            port_factor.value = conversionFactor
+            port_factor.value = factor
             self.create_connection(src, port_input)
             self.create_connection(port_output, dst)
             return None
@@ -411,38 +407,33 @@ class MockedSession(collections.MutableMapping):
             self.onConnectionRemoved.emit(connection)
         self.connections.remove(connection)
 
-    # Node methods
-
-    def get_selection(self):
-        return self.selection
-
     # Port methods
 
     def get_node_port_by_name(self, node, name):
         """
         Retrive a port from a node and a port name.
 
-        :param MockedNode node: The node to query.
+        :param MockedNode node: The node to namespace.
         :param str name: The desired port name.
         :return: A port matching the requirements. None if nothing is found.
         :rtype: MockedPort or None
         """
         assert isinstance(node, MockedNode)
-        assert isinstance(name, basestring)
+        assert isinstance(name, six.string_types)
 
         for port in self.ports_by_node.get(node, ()):
             if port.name == name:
                 return port
-            elif port.short_name == name:
+            if port.short_name == name:
                 return port
-            elif port.nice_name == name:
+            if port.nice_name == name:
                 return port
         return None
 
     def port_is_source(self, port):
         """
         Resolve if the provided port is the source of a connection.
-        :param MockedPort port: The port to query.
+        :param MockedPort port: The port to namespace.
         :return: True if the port is the source of a connection. False otherwise.
         :rtype: bool
         """
@@ -451,7 +442,7 @@ class MockedSession(collections.MutableMapping):
     def port_is_destination(self, port):
         """
         Resolve if the provided port if the destination of a connection.
-        :param MockedPort port: The port to query.
+        :param MockedPort port: The port to namespace.
         :return: True if the port is the destination of a connection. False otherwise.
         :rtype: bool
         """
@@ -460,7 +451,7 @@ class MockedSession(collections.MutableMapping):
     def get_port_input_connections(self, port):
         """
         Retrieve the connections that use the provided port as destination.
-        :param MockedPort port: The port to query.
+        :param MockedPort port: The port to namespace.
         :return: A set of mocked connections
         :rtype: Set[MockedConnection]
         """
@@ -469,7 +460,7 @@ class MockedSession(collections.MutableMapping):
     def get_port_output_connections(self, port):
         """
         Retrieve the connections that use the provided port as destination.
-        :param MockedPort port: The port to query.
+        :param MockedPort port: The port to namespace.
         :return: A set of mocked connections
         :rtype: Set[MockedConnection]
         """
@@ -478,7 +469,7 @@ class MockedSession(collections.MutableMapping):
     def get_port_inputs(self, port):
         """
         Retrieve all port that take part in a connection where the provided port is the destination.
-        :param MockedPort port: The port to query.
+        :param MockedPort port: The port to namespace.
         :return: A set of mocked ports.
         :rtype: Set[MockedPort]
         """
@@ -487,7 +478,7 @@ class MockedSession(collections.MutableMapping):
     def get_port_outputs(self, port):
         """
         Retrieve all port that take part in a connection where the provided port is the source.
-        :param MockedPort port: The port to query.
+        :param MockedPort port: The port to namespace.
         :return: A set of mocked ports.
         :rtype: Set[MockedPort]
         """

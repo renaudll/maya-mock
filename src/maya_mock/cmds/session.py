@@ -1,13 +1,9 @@
-# pylint: disable=invalid-name
-from enum import Enum
-
+"""
+Mocks for a `maya.cmds` session
+"""
+# TODO: Implement cmds.allNodeTypes
 from maya_mock.base import MockedSession
-
-
-class EnumTypes(Enum):
-    Transform = 1
-    Shape = 2
-    Utility = 3  # (dg)
+from maya_mock.base._utils import handle_arguments, redirect_method_args_to_arg
 
 
 class MockedCmdsSession(object):
@@ -42,62 +38,73 @@ class MockedCmdsSession(object):
 
         return port_src, port_dst
 
-    def _handle_unimplemented_kwargs(self, kwargs):
-        if kwargs:
-            raise NotImplementedError(
-                "Not implemented keyword argument%s: %s"
-                % ("s" if len(kwargs) else "", ", ".join(kwargs.keys()))
-            )
-
-    def addAttr(self, *objects, **kwargs):
+    @redirect_method_args_to_arg
+    @handle_arguments(
+        attributeType="at",
+        dataType="dt",
+        defaultValue="dv",
+        longName="ln",
+        niceName="nn",
+        shortName="sn",
+    )  # pylint: disable=invalid-name,too-many-arguments
+    def addAttr(
+        self,
+        objects,
+        attributeType=None,
+        dataType=None,
+        defaultValue=0.0,
+        longName=None,
+        niceName=None,
+        shortName=None,
+    ):  # pylint: disable: invalid-name,too-many-arguments
         """
         Create an attribute
 
-        See `documentation <https://download.autodesk.com/us/maya/2009help/CommandsPython/addAttr.html>`__ for details.
+        https://download.autodesk.com/us/maya/2009help/CommandsPython/addAttr.html
 
+        :param str attributeType: The attribute type
+        :param str dataType: The attribute data type
+        :param object defaultValue: The attribute default value
+        :param str longName: The attribute long name
+        :param str shortName: The attribute short name
+        :param tuple[str] objects: Objects to add the attribute to
         """
         # Retrieve the attribute name.
-        name_long = kwargs.get("longName")
-        name_short = kwargs.get("shortName")
-        if not name_long and not name_short:
+        if not longName and not shortName:
             raise RuntimeError(
                 "New attribute needs either a long (-ln) or short (-sn) attribute name."
             )
 
-        default = kwargs.get("defaultValue", 0.0)
-
-        name = name_long or name_short
-
-        port_type = (
-            kwargs.get("attributeType")
-            or kwargs.get("at")
-            or kwargs.get("dataType")
-            or kwargs.get("dt")
-            or "float"
-        )
+        name = longName or shortName
+        port_type = attributeType or dataType or "float"
 
         for object_ in objects:
             node = self.session.get_node_by_match(object_)
             self.session.create_port(
-                node, name, port_type=port_type, short_name=name_short, value=default
+                node,
+                name,
+                port_type=port_type,
+                short_name=shortName,
+                value=defaultValue,
+                nice_name=niceName,
             )
 
-    def allNodeTypes(self, **kwargs):
-        """
-        List known node types.
-
-        See `documentation <https://download.autodesk.com/us/maya/2011help/CommandsPython/allNodeTypes.html>`__ for details.
-        """
-        raise NotImplementedError
-
-    def createNode(self, _type, name=None, parent=None, shared=None, skipSelect=None):
+    @handle_arguments(name="n", parent="p", skipSelect="ss")
+    def createNode(
+        self, type_, name=None, parent=None, skipSelect=False
+    ):  # pylint: disable=invalid-name
         """
         Create a node
 
-        See `documentation <https://knowledge.autodesk.com/search-result/caas/CloudHelp/cloudhelp/2018/ENU/Maya-Tech-Docs/CommandsPython/createNode-html.html>`__ for details.
+        https://knowledge.autodesk.com/search-result/caas/CloudHelp/cloudhelp/2018/ENU/Maya-Tech-Docs/CommandsPython/createNode-html.html
+
+        :param str type_: A node type
+        :param str name: A node name
+        :parent str parent: An optional node parent
+        :param bool skipSelect: If True, the node creation won't affect the current selection.
         """
         parent = self.session.get_node_by_match(parent) if parent else None
-        node = self.session.create_node(_type, name=name, parent=parent)
+        node = self.session.create_node(type_, name=name, parent=parent)
         name = node.__melobject__()
 
         # Select the new node except if -skipSelect
@@ -106,13 +113,14 @@ class MockedCmdsSession(object):
 
         return name
 
+    @handle_arguments(sourceFromDestination="sdf", destinationFromSource="dfs")
     def connectionInfo(
         self, dagpath, sourceFromDestination=False, destinationFromSource=False
-    ):
+    ):  # pylint: disable=invalid-name
         """
         Get information about connection sources and destinations.
 
-        See `documentation <https://help.autodesk.com/cloudhelp/2017/ENU/Maya-Tech-Docs/Commands/connectionInfo.html>`__ for details.
+        https://help.autodesk.com/cloudhelp/2017/ENU/Maya-Tech-Docs/Commands/connectionInfo.html
 
         :param str dagpath: A port dag path
         :param bool sourceFromDestination:
@@ -123,6 +131,7 @@ class MockedCmdsSession(object):
         :rtype: bool or str or list(str)
         """
         port = self.session.get_port_by_match(dagpath)
+
         if sourceFromDestination and not destinationFromSource:
             return next(
                 (
@@ -131,59 +140,61 @@ class MockedCmdsSession(object):
                 ),
                 "",
             )
-        elif destinationFromSource and not sourceFromDestination:
+
+        if destinationFromSource and not sourceFromDestination:
             return [
                 connection.dst.__melobject__()
                 for connection in self.session.get_port_output_connections(port)
             ]
-        elif sourceFromDestination and destinationFromSource:
-            raise RuntimeError("You cannot specify more than one flag.")
-        else:  # elif not sourceFromDestination and not destinationFromSource
-            raise RuntimeError("You must specify exactly one flag.")
 
-    def connectAttr(self, src, dst, **kwargs):
+        if sourceFromDestination and destinationFromSource:
+            raise RuntimeError("You cannot specify more than one flag.")
+
+        raise RuntimeError("You must specify exactly one flag.")
+
+    @handle_arguments()
+    def connectAttr(self, src, dst):  # pylint: disable=invalid-name
         """
         Create a connection
 
-        See `documentation <https://help.autodesk.com/cloudhelp/2016/ENU/Maya-Tech-Docs/CommandsPython/connectAttr.html>`__ for details.
+        https://help.autodesk.com/cloudhelp/2016/ENU/Maya-Tech-Docs/CommandsPython/connectAttr.html
 
         :param str src: The connection source port.
         :param str dst: The connection destination port.
         """
-        self._handle_unimplemented_kwargs(kwargs)
+        # TODO: Add force flag
         src, dst = self._conform_connection_ports(src, dst)
 
-        for connection in self.session.connections:
-            if connection.src is src and connection.dst is dst:
-                # This also raise this warning to the script editor:
-                self.warning("%r is already connected to %r." % (src, dst))
-                raise RuntimeError("Maya command error")
+        connection = self.session.get_connection_by_ports(src, dst)
+        if connection:
+            # This also raise this warning to the script editor:
+            self.warning("%r is already connected to %r." % (src, dst))
+            raise RuntimeError("Maya command error")
 
         self.session.create_connection(src, dst)
 
-    def delete(self, name, **kwargs):
+    @handle_arguments()
+    def delete(self, name):
         """
         Delete nodes
 
-        See `documentation <https://download.autodesk.com/us/maya/2009help/CommandsPython/delete.html>`__ for details.
+        https://download.autodesk.com/us/maya/2009help/CommandsPython/delete.html
 
         :param str name: A pattern defining what to delete.
-        :param kwargs: Any additional keyword argument is not implemented.
         """
         node = self.session.get_node_by_name(name)
         self.session.remove_node(node)
 
-    def disconnectAttr(self, src, dst, **kwargs):
+    @handle_arguments()
+    def disconnectAttr(self, src, dst):  # pylint: disable=invalid-name
         """
         Delete a connection
 
-        See `documentation <http://download.autodesk.com/us/maya/2009help/CommandsPython/disconnectAttr.html>`__ for details.
+        http://download.autodesk.com/us/maya/2009help/CommandsPython/disconnectAttr.html
 
         :param str src: The connection source port.
         :param str dst: The connection destination port.
-        :param kwargs: Any additional keyword argument is not implemented.
         """
-        self._handle_unimplemented_kwargs(kwargs)
         src, dst = self._conform_connection_ports(src, dst)
         connection = self.session.get_connection_by_ports(src, dst)
 
@@ -196,14 +207,15 @@ class MockedCmdsSession(object):
 
         self.session.remove_connection(connection)
 
-    def deleteAttr(self, *queries, **kwargs):
+    @redirect_method_args_to_arg
+    @handle_arguments(attribute="at")
+    def deleteAttr(self, queries, attribute=None):  # pylint: disable=invalid-name
         """
         Delete an attribute (port).
 
-        See `documentation <https://download.autodesk.com/us/maya/2010help/CommandsPython/deleteAttr.html>`__ for details.
+        https://download.autodesk.com/us/maya/2010help/CommandsPython/deleteAttr.html
         """
-        attribute = kwargs.get("attribute") or kwargs.get("at")
-
+        # TODO: What happen when attribute is not provided?
         for query in queries:
             # If the provided value match a specific port, delete it.
             port = self.session.get_port_by_match(query)
@@ -215,11 +227,12 @@ class MockedCmdsSession(object):
             port = self.session.get_port_by_match(query)
             self.session.remove_port(port)
 
-    def getAttr(self, dagpath):
+    @handle_arguments()
+    def getAttr(self, dagpath):  # pylint: disable=invalid-name
         """
         Get the value associated with an attribute.
 
-        See `documentation <https://download.autodesk.com/us/maya/2009help/CommandsPython/getAttr.html>`__ for details.1
+        https://download.autodesk.com/us/maya/2009help/CommandsPython/getAttr.html
 
         :param str dagpath: A dagpath to an attribute.
         :return: The value associated with that attribute.
@@ -230,15 +243,18 @@ class MockedCmdsSession(object):
             raise ValueError("No object matches name: %s" % dagpath)
         return port.value
 
-    def listAttr(self, *objects, **kwargs):
+    @redirect_method_args_to_arg
+    @handle_arguments(userDefined="ud")
+    def listAttr(self, objects, userDefined=False):  # pylint: disable=invalid-name
         """
         List node attributes (ports).
 
-        See `documentation <https://help.autodesk.com/cloudhelp/2017/ENU/Maya-Tech-Docs/Commands/listAttr.html>`__ for details.
-        """
-        userDefined = kwargs.pop("userDefined", False)
+        https://help.autodesk.com/cloudhelp/2017/ENU/Maya-Tech-Docs/Commands/listAttr.html
 
-        self._handle_unimplemented_kwargs(kwargs)
+        :param tuple[str] objects: Objects to list attributes from
+        :return: A list of attribute names
+        :rtype: list[str]
+        """
 
         def _filter_port(port):
             if userDefined and not port.user_defined:
@@ -256,21 +272,25 @@ class MockedCmdsSession(object):
         ports = filter(_filter_port, ports)
         return [port.name for port in ports]
 
+    @redirect_method_args_to_arg
+    @handle_arguments(long="l", selection="sl", type="typ")
     def ls(
-        self, pattern=None, long=False, selection=False, type=None
-    ):  # TODO: Verify symbol name?
+        self, objects, long=False, selection=False, type=None
+    ):  # pylint: disable=invalid-name,redefined-builtin
         """
         List nodes
 
-        See `documentation <https://download.autodesk.com/us/maya/2011help/Commands/ls.html>`__ for details.
+        https://download.autodesk.com/us/maya/2011help/Commands/ls.html
 
-        :param str pattern: The pattern to match
         :param bool long: If True, return dag paths
         :param bool selection: If True, return selection
         :param bool type: If set, return only nodes of this type
+        :param tuple[str] objects: The pattern to match
         :return: A list of node
         :rtype: list of str
         """
+        pattern = next(iter(objects), None)
+        # TODO: Support multiple objects
 
         def _filter(node):
             """
@@ -288,19 +308,19 @@ class MockedCmdsSession(object):
         def _get(n):
             if long:
                 return n.dagpath
-            else:
-                return n.__melobject__()
+            return n.__melobject__()
 
         nodes = [
             node for node in self.session.iter_node_by_match(pattern) if _filter(node)
         ]
         return [_get(node) for node in sorted(nodes)]
 
-    def nodeType(self, name):
+    @handle_arguments()
+    def nodeType(self, name):  # pylint: disable=invalid-name
         """
         Query a node type
 
-        See `documentation <https://help.autodesk.com/cloudhelp/2018/ENU/Maya-Tech-Docs/Commands/nodeType.html>`__ for details.
+        https://help.autodesk.com/cloudhelp/2018/ENU/Maya-Tech-Docs/Commands/nodeType.html
 
         :return: The type of the node.
         :rtype: bool
@@ -308,11 +328,11 @@ class MockedCmdsSession(object):
         node = self.session.get_node_by_name(name)
         return node.type
 
-    def objExists(self, pattern):
+    def objExists(self, pattern):  # pylint: disable=invalid-name
         """
         Determine if an object exist.
 
-        See `documentation <https://download.autodesk.com/us/maya/2009help/CommandsPython/objExists.html>`__ for details.
+        https://download.autodesk.com/us/maya/2009help/CommandsPython/objExists.html
 
         :param str pattern: The pattern to check.
         :return: True if an existing object match the provided pattern, False otherwise.
@@ -322,27 +342,26 @@ class MockedCmdsSession(object):
             self.session.get_port_by_match(pattern)
         )
 
+    @handle_arguments()
     def select(self, names):
         """
         Select nodes in the scene that match a specific pattern.
 
-        See `documentation <https://download.autodesk.com/us/maya/2010help/CommandsPython/select.html>`__ for details.
+        https://download.autodesk.com/us/maya/2010help/CommandsPython/select.html
 
-        :param str names: A list of node names to select.
+        :param list[str] names: A list of node names to select.
         """
+        # TODO: Implement pattern matching
+        self.session.selection = [
+            node for node in self.session.nodes if node.name in names
+        ]
 
-        def _find_node(node):
-            for n in self.session.nodes:
-                if n.name in names:
-                    yield n
-
-        self.session.selection = [y for name in names for y in _find_node(name)]
-
-    def setAttr(self, dagpath, value):
+    @handle_arguments()
+    def setAttr(self, dagpath, value):  # pylint: disable=invalid-name
         """
         Set the value of an attribute.
 
-        See `documentation <https://download.autodesk.com/global/docs/maya2012/en_us/CommandsPython/setAttr.html>`__ for details.
+        https://download.autodesk.com/global/docs/maya2012/en_us/CommandsPython/setAttr.html
 
         :param str dagpath: The dagpath to an attribute.
         :param object value: The new value of the attribute.
@@ -350,26 +369,23 @@ class MockedCmdsSession(object):
         port = self.session.get_port_by_match(dagpath)
         port.value = value
 
-    def parent(self, *dag_objects, **kwargs):
+    @redirect_method_args_to_arg
+    @handle_arguments(world="w")
+    def parent(self, objects, world=False):
         """
         Parent nodes
 
-        See `documentation <https://download.autodesk.com/global/docs/maya2012/en_us/CommandsPython/parent.html>`__ for details
+        https://download.autodesk.com/global/docs/maya2012/en_us/CommandsPython/parent.html
 
-        :param dag_objects: The objects to parent.
+        :param objects: The objects to parent.
         :param bool world: Will unparent provided objects if True.
-        :param kwargs: Any other keyword arguments are not implemented.
         """
-        world = kwargs.pop("world", False)
-
-        self._handle_unimplemented_kwargs(kwargs)
-
         if world:
-            children = dag_objects
+            children = objects
             parent = None
         else:
-            children = dag_objects[:-1]
-            parent = dag_objects[-1]
+            children = objects[:-1]
+            parent = objects[-1]
 
         # Convert to our internal datatype
         children = [self.session.get_node_by_name(child) for child in children]
@@ -378,12 +394,13 @@ class MockedCmdsSession(object):
         for child in children:
             child.set_parent(parent)
 
-    def warning(self, msg):
+    @handle_arguments()
+    def warning(self, msg, **_):
         """
         Log a warning to stdout.
 
-        See `documentation <https://download.autodesk.com/global/docs/maya2014/en_us/CommandsPython/warning.html>`__ for details.
+        https://download.autodesk.com/global/docs/maya2014/en_us/CommandsPython/warning.html
 
-        :param str msg: The message to log
+        :param str msg: The message to _LOG
         """
         self.session.warning(msg)

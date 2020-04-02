@@ -1,11 +1,11 @@
 """A mocked node"""
 import six
 
-from maya_mock.base import naming
+from maya_mock.base import naming, _abstract
 from maya_mock.base.constants import SHAPE_CLASS
 
 
-class MockedNode(object):
+class MockedNode(_abstract.BaseDagObject):
     """
     A mocked Maya node
     """
@@ -35,29 +35,11 @@ class MockedNode(object):
         if parent:
             self.set_parent(parent)
 
-    def __eq__(self, other):
-        return hash(self) == hash(other)
-
-    def __ne__(self, other):
-        return hash(self) != hash(other)
-
-    def __gt__(self, other):
-        return self.dagpath > other.dagapth
-
-    def __lt__(self, other):
-        return self.dagpath < other.dagpath
-
-    def __ge__(self, other):
-        return self.dagpath >= other.dagpath
-
-    def __le__(self, other):
-        return self.dagpath <= other.dagpath
-
     def __hash__(self):
         # Note: We can't use the dagpath as the hash source since it can change.
         # This might prevent us from accessing a MockedNode that was stored in a dict
         # before it was re-parented.
-        return super(MockedNode, self).__hash__()
+        return object.__hash__(self)
 
     def __repr__(self):
         return '<Mocked Node "{}">'.format(self.dagpath)
@@ -114,21 +96,20 @@ class MockedNode(object):
             parent.children.add(self)
         self._parent = parent
 
-    def get_port_by_name(
-        self, name
-    ):  # TODO: Deprecate? This should be called from session instead
+    def get_port_by_name(self, name):
         """
         Query a specific node port by it's name.
         :param str name: The name of the port to search.
         :return: A Port if a match is found. Return None otherwise.
         :rtype: maya_mock.MockedPort or None
         """
+        # TODO: Deprecate? This should be called forom the session
         for port in self.ports:
             if port.name == name:
                 return port
         return None
 
-    def isShape(self):
+    def is_shape(self):
         """
         Determine if the current node instance if a shape.
 

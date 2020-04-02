@@ -12,7 +12,7 @@ setup(
     packages=find_packages(where="src"),
     package_dir={"": "src"},
     install_requires=["enum; python_version < '3.0'", "six", "mock"],
-    extras_require={"test": ["pytest", "pytest-cov", "coverage"]},
+    extras_require={"test": ["pytest", "pytest-cov", "coverage", "hypothesis"]},
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Intended Audience :: Developers",

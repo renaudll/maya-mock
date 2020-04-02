@@ -3,7 +3,7 @@ import logging
 
 from maya import cmds
 
-log = logging.getLogger(__name__)
+_LOG = logging.getLogger(__name__)
 
 
 def get_node_type_namespace(node_type):
@@ -13,14 +13,14 @@ def get_node_type_namespace(node_type):
     >>> get_node_type_namespace('transform')
     [u'containerBase', u'entity', u'dagNode', u'transform']
 
-    :param str node_type: A node type string. 
+    :param str node_type: A node type string.
     :return: The name of the parent type of the provided node type.
     :rtype: list(str)
     """
     try:
         return cmds.nodeType(node_type, isTypeName=True, inherited=True) or []
     except RuntimeError as error:  # TODO: Document why this can happen
-        log.warning(error)
+        _LOG.warning(error)
         return []
 
 
@@ -37,7 +37,7 @@ def get_node_attributes_info(node_type):
     try:
         attributes = cmds.attributeInfo(allAttributes=True, type=node_type)
     except RuntimeError as error:  # TODO: Document why this can happen
-        log.warning(error)
+        _LOG.warning(error)
         return result
 
     return {
@@ -94,9 +94,8 @@ def get_node_classification(node_type):
     """
     classifications = cmds.getClassification(node_type)
     # Get the node identification tags
-    if (
-        len(classifications) != 1
-    ):  # This should not happen, but we don't know why getClassification return a list.
+    if len(classifications) != 1:
+        # This should not happen, we don't know why getClassification return a list.
         raise Exception("Unexpected classification return value for %r" % node_type)
     classification = classifications[0]
 

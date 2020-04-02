@@ -1,5 +1,5 @@
 """
-Unit-tests for the MockedCmdsSession interface.
+Test cases for MockedCmdsSession
 Theses test should not depend on any specific schema.
 """
 import pytest
@@ -10,13 +10,13 @@ import pytest
 # TODO: test_partial_dagpath (ex: ['transform1|a', 'transform2|b'])
 
 
-def test_createNode(cmds):
+def test_createNode(cmds):  # pylint: disable=invalid-name
     """ Validate result when calling createNode without any name."""
     cmds.createNode("transform")
     assert cmds.objExists("transform1")
 
 
-def test_createNode_multi(cmds):
+def test_createNode_multi(cmds):  # pylint: disable=invalid-name
     """ Validate result when calling createNode multiple times without any name."""
     cmds.createNode("transform")
     cmds.createNode("transform")
@@ -24,13 +24,13 @@ def test_createNode_multi(cmds):
     assert cmds.objExists("transform2")
 
 
-def test_createNode_name(cmds):
+def test_createNode_name(cmds):  # pylint: disable=invalid-name
     """ Validate result when calling createNode and specifying a name that don't exist."""
     cmds.createNode("transform", name="foo")
     assert cmds.objExists("foo")
 
 
-def test_createNode_name_multi(cmds):
+def test_createNode_name_multi(cmds):  # pylint: disable=invalid-name
     """ Validate result when calling createNode and specifying a name that exist."""
     cmds.createNode("transform", name="foo")
     cmds.createNode("transform", name="foo")
@@ -40,7 +40,7 @@ def test_createNode_name_multi(cmds):
     assert cmds.objExists("foo2")
 
 
-def test_createNode_name_with_namespace(cmds):
+def test_createNode_name_with_namespace(cmds):  # pylint: disable=invalid-name
     """ Validate result when calling createNode and using a name with a namespace."""
     result = cmds.createNode("transform", name="foo:bar")
     assert result == u"foo:bar"
@@ -89,7 +89,10 @@ def test_ls_type(cmds):
 
 
 def test_ls_dag_clashes(cmds):
-    """ Validate that when two node have clashing name and `long` is False, we'll get a partial representation."""
+    """
+    Validate that when two node have clashing name and `long` is False,
+    we'll get a partial representation.
+    """
     cmds.createNode("transform", name="parent")
     cmds.createNode("transform", name="child", parent="parent")
     cmds.createNode("transform", name="child")
@@ -98,7 +101,7 @@ def test_ls_dag_clashes(cmds):
 
 
 def test_ls_long_dagnode(cmds):
-    """ Validate we can use ls with the `long` karg on dagnodes."""
+    """ Validate we can use ls with the `long` kwarg on dagnodes."""
     cmds.createNode("transform")
     assert cmds.ls("transform*", type="transform", long=True) == [u"|transform1"]
 
@@ -121,7 +124,7 @@ def test_selection_on_node_creationg(cmds):
     assert cmds.ls(selection=True) == ["foo"]
 
 
-def test_createNode_parent(cmds):
+def test_createNode_parent(cmds):  # pylint: disable=invalid-name
     """Validate that we can create node using the `parent` kwarg."""
     cmds.createNode("transform", name="transformA")
     cmds.createNode("transform", name="transformB", parent="transformA")
@@ -131,7 +134,7 @@ def test_createNode_parent(cmds):
     ]
 
 
-def test_createNode_skipSelect(cmds):
+def test_createNode_skipSelect(cmds):  # pylint: disable=invalid-name
     """Validate that when creating node using the `skipSelect` kwarg, the selected don't change."""
     cmds.createNode("transform", name="a")
     cmds.createNode("transform", name="b", skipSelect=True)
@@ -153,7 +156,7 @@ def test_select(cmds):
     assert cmds.ls(selection=True) == ["transform1"]
 
 
-def test_addAttr(cmds):
+def test_addAttr(cmds):  # pylint: disable=invalid-name
     """Ensure we can create a port."""
     node = cmds.createNode("transform")
     cmds.addAttr(node, longName="foo")
@@ -161,16 +164,21 @@ def test_addAttr(cmds):
     assert cmds.objExists("transform1.foo")
 
 
-def test_addAttr_missingName(cmds):
-    """Ensure a RuntimeError is raised when trying to use addAttr without the `longName` or `shortName` flag."""
+def test_addAttr_missingName(cmds):  # pylint: disable=invalid-name
+    """
+    Ensure a RuntimeError is raised when trying to use addAttr
+    without the `longName` or `shortName` flag.
+    """
     node = cmds.createNode("transform")
-    with pytest.raises(RuntimeError) as exception:
+    with pytest.raises(RuntimeError):
         cmds.addAttr(node)
     # TODO: Use absolute comparison, there's an issue with the last '\n' character.
-    # assert exception.match(u'New attribute needs either a long (-ln) or short (-sn) attribute name.')
+    # assert exception.match(
+    #     u"New attribute needs either a long (-ln) or short (-sn) attribute name."
+    # )
 
 
-def test_deleteAttr(cmds):
+def test_deleteAttr(cmds):  # pylint: disable=invalid-name
     """Ensure we can delete a dynamic attribute."""
     node = cmds.createNode("transform")
     cmds.addAttr(node, longName="foo")
@@ -178,29 +186,29 @@ def test_deleteAttr(cmds):
     assert not cmds.objExists("transform1.foo")
 
 
-def test_getAttr_defaultValue(cmds):
-    """Ensure we can query the value of a port."""
+def test_getAttr_default_value(cmds):  # pylint: disable=invalid-name
+    """Ensure we can namespace the value of a port."""
     node = cmds.createNode("transform")
     cmds.addAttr(node, longName="foo", defaultValue=1.0)
     assert cmds.getAttr("transform1.foo") == 1.0
 
 
-def test_getAttr_invalid_path(cmds):
+def test_getAttr_invalid_path(cmds):  # pylint: disable=invalid-name
     """Ensure we fail the same way as Maya when calling getAttr with a non-existent dag path."""
-    node = cmds.createNode("transform")
+    cmds.createNode("transform")
     with pytest.raises(ValueError) as exception:
         cmds.getAttr("transform1.a_missing_attribute")
     assert exception.match("No object matches name: transform1.a_missing_attribute")
 
 
-def test_getAttr_shortName(cmds):
+def test_getAttr_shortName(cmds):  # pylint: disable=invalid-name
     """Ensure we can call getAttr using a port short name."""
     node = cmds.createNode("transform")
     cmds.addAttr(node, longName="fooLong", shortName="fooShort", defaultValue=1.0)
     assert cmds.getAttr("transform1.fooShort") == 1.0
 
 
-def test_getAttr_niceName(cmds):
+def test_getAttr_niceName(cmds):  # pylint: disable=invalid-name
     """Ensure that like Maya, we can't call getAttr from a port using it's nice name."""
     node = cmds.createNode("transform")
     cmds.addAttr(node, longName="fooLong", niceName="fooNice", defaultValue=1.0)
@@ -209,7 +217,7 @@ def test_getAttr_niceName(cmds):
     assert exception.match("No object matches name: transform1.fooNice")
 
 
-def test_setAttr(cmds):
+def test_setAttr(cmds):  # pylint: disable=invalid-name
     """Ensure we can change the value of a port."""
     node = cmds.createNode("transform")
     cmds.addAttr(node, longName="foo")
@@ -217,14 +225,14 @@ def test_setAttr(cmds):
     assert cmds.getAttr("transform1.foo") == 20
 
 
-def test_listAttr(cmds):
+def test_listAttr(cmds):  # pylint: disable=invalid-name
     """Ensure listAttr work as expected."""
     node = cmds.createNode("transform")
     cmds.addAttr(node, longName="foo")
     assert cmds.listAttr(node, userDefined=True) == ["foo"]
 
 
-def test_nodeType(cmds):
+def test_nodeType(cmds):  # pylint: disable=invalid-name
     """Ensure nodeType work as expected."""
     node = cmds.createNode("transform")
     assert cmds.nodeType(node) == "transform"

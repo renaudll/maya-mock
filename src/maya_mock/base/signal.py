@@ -1,3 +1,6 @@
+"""
+Observer pattern implementation
+"""
 import logging
 import threading
 
@@ -5,20 +8,20 @@ LOG = logging.getLogger(__name__)
 LOG.setLevel(logging.INFO)
 
 # TODO: Replace with https://github.com/dgovil/PySignal ?
-# TODO: Implement __str__ that query sender?
+# TODO: Implement __str__ that namespace sender?
 
 
 class Signal(object):
     """
-    Observer pattern implementation that match QtCore.Signal interface.
+    Observer pattern implementation.
+    Match QtCore.Signal interface for convenience.
 
     Q1: Why no use QtCore.Signal instead?
-    A1: QtCore.Signal is compiled and cannot be inspected with breakpoints which make debugging harder.
-
-    :param args: The signature of the signal. This is the type of argument that we expect to pass. Unused
+    A1: QtCore.Signal is compiled and cannot be inspected
+        with breakpoints which make debugging harder.
     """
 
-    def __init__(self, *args):
+    def __init__(self, *_):
         self._mutex = threading.RLock()
         self._funcs = set()
         self._block = False
@@ -70,4 +73,8 @@ class Signal(object):
             self.block(False)
 
     def block(self, state):
+        """
+        Set the "block" mutex that determine if we can emit the signal.
+        :param bool state: Should we block the signal?
+        """
         self._block = state

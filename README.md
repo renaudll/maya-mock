@@ -4,7 +4,7 @@
 [![codecov](https://codecov.io/gh/renaudll/maya-mock/branch/master/graph/badge.svg)](https://codecov.io/gh/renaudll/maya-mock)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
-A mock for Autodesk Maya it's `cmds` and `pymel` API. 
+A mock for Autodesk Maya and it's `cmds` and `pymel` API. 
 
 Originally developed to ease testing of omtk2. 
 
@@ -25,14 +25,23 @@ To run the tests you'll need to install tox.
 pip install tox
 ```
 
-Then you can run the tests with:
+Then assuming you have python-2, python-3 and maya-2017 on your system, you can run all checks with:
 
 ```bash
 tox
 ```
 
+### Tox tips
+
+You can run individual checks with the `-e` flag.
 See the `tox.ini` file for the available targets.
-For example bellow will run a single test in a python-3.7 environment.
+
+```bash
+tox -e unit-py2.7
+```
+
+You can also pass arguments to your tests with the `--` flag.
+For example, here's how to run a single test named `test_node_shape_transform_melobject` in python-2.7:
 
 ```bash
 tox -e unit-py2.7 -- -k test_node_shape_transform_melobject

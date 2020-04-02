@@ -1,17 +1,20 @@
-"""Mock for pymel.core.PyNode"""
-
-
-# pylint: disable=invalid-name
+"""
+Mock for pymel.core.PyNode
+"""
 
 
 class MockedPymelNode(object):
     """
     A pymel.core.PyNode mock.
 
-    See `documentation <https://help.autodesk.com/cloudhelp/2018/CHS/Maya-Tech-Docs/PyMel/generated/classes/pymel.core.general/pymel.core.general.PyNode.html#pymel.core.general.PyNode>`__ for details.
+    https://help.autodesk.com/cloudhelp/2018/CHS/Maya-Tech-Docs/PyMel/generated/classes/pymel.core.general/pymel.core.general.PyNode.html#pymel.core.general.PyNode
     """
 
     def __init__(self, pymel, node):
+        """
+        :param maya_mock.MockedPymelSession pymel: A mocked pymel session
+        :param maya_mock.MockedNode node: A mocked node
+        """
         self.__pymel = pymel
         self.__session = pymel.session
         self._node = node
@@ -37,7 +40,7 @@ class MockedPymelNode(object):
 
         port = session.get_node_port_by_name(self._node, item)
         if port:
-            mock = pymel._port_to_attribute(port)
+            mock = pymel.port_to_attribute(port)
             return mock
 
         raise AttributeError(
@@ -48,13 +51,20 @@ class MockedPymelNode(object):
         return self._node.__melobject__()
 
     def attr(self, name):
+        """
+        Get an attribute from it's name.
+
+        :param str name: An attribute name
+        :return: A mocked pymel attribute
+        :rtype: maya_mock.MockedPymelPort
+        """
         session = self.__session
         pymel = self.__pymel
 
         port = session.get_node_port_by_name(self._node, name)
-        return pymel._port_to_attribute(port)
+        return pymel.port_to_attribute(port)
 
-    def getAttr(self, name):
+    def getAttr(self, name):  # pylint: disable=invalid-name
         """
         Query the value of an attribute.
 
@@ -66,13 +76,14 @@ class MockedPymelNode(object):
         port = session.get_node_port_by_name(self._node, name)
         return port.value
 
-    def hasAttr(self, name, checkShape=True):
+    def hasAttr(self, name, checkShape=True):  # pylint: disable=invalid-name
         """
         Convenience function for determining if an object has an attribute.
-        If checkShape is enabled, the shape node of a transform will also be checked for the attribute.
+        If checkShape is enabled, the shape node of a transform will
+        also be checked for the attribute.
 
         :param str name: The name of the attribute to check.
-        :param bool checkShape: Determine if we also need to check the shape of the node is a transform. Default is True.
+        :param bool checkShape: Should we check if the shape of the node is a transform?
         :return: True if the object has the provided attribute. False otherwise.
         :rtype: bool
         """
@@ -93,21 +104,21 @@ class MockedPymelNode(object):
         """
         return self._node.name
 
-    def nodeName(self):
+    def nodeName(self):  # pylint: disable=invalid-name
         """
         :return: Just the name of the node, without any dag path.
         :rtype: str
         """
         return self._node.name
 
-    def fullPath(self):
+    def fullPath(self):  # pylint: disable=invalid-name
         """
         :return: The full dag path to the object, including leading pipe (|).
         :rtype: str
         """
         return self._node.dagpath
 
-    def getParent(self, generation=1):
+    def getParent(self, generation=1):  # pylint: disable=invalid-name
         """
         Return the parent of this node.
 
@@ -117,12 +128,12 @@ class MockedPymelNode(object):
         """
         pymel = self.__pymel
         node = self._node
-        for i in range(generation):
+        for _ in range(generation):
             node = node.parent
 
-        return pymel._node_to_pynode(node) if node else None
+        return pymel.node_to_pynode(node) if node else None
 
-    def setParent(self, *args, **kwargs):
+    def setParent(self, *args, **kwargs):  # pylint: disable=invalid-name
         """
         Reparent the current node.
 
@@ -132,7 +143,7 @@ class MockedPymelNode(object):
         pymel = self.__pymel
         pymel.parent(self, *args, **kwargs)
 
-    def getChildren(self):
+    def getChildren(self):  # pylint: disable=invalid-name
         """
         Query the children of this node.
 
@@ -144,12 +155,12 @@ class MockedPymelNode(object):
         parent = self._node
         # TODO: Does ordering matter?
         return [
-            pymel._node_to_pynode(node)
+            pymel.node_to_pynode(node)
             for node in session.nodes
             if node.parent is parent
         ]
 
-    def getShapes(self):
+    def getShapes(self):  # pylint: disable=invalid-name
         """
         Query the shapes of this node.
         This only work on transform node.
@@ -163,6 +174,6 @@ class MockedPymelNode(object):
         nodes = [
             node
             for node in session.nodes
-            if node.parent is parent and session and node.isShape()
+            if node.parent is parent and session and node.is_shape()
         ]
-        return [pymel._node_to_pynode(node) for node in nodes]
+        return [pymel.node_to_pynode(node) for node in nodes]

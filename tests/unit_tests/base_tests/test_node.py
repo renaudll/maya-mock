@@ -1,3 +1,8 @@
+"""
+Test cases for MockedNode
+"""
+
+
 def test_dagpath(session):
     """Validate that the correct dagpath is returned for a node with a unique name."""
     node = session.create_node("transform")
@@ -24,16 +29,19 @@ def test_node_melobject(session):
 
 
 def test_node_shape_transform_melobject(session):
+    """Assert creating a shape will create it's appropriate transform."""
     shape = session.create_node("mesh", name="A")
-    transform = shape.parent
-    assert transform.__melobject__() == "polySurface1"
+    assert shape.parent.__melobject__() == "polySurface1"
 
 
 def test_node_melobject_clashing_rootnode(session):
-    """Assert that a node at root level that have the same name as another node will start with a `|`."""
+    """
+    Assert that a the mel representation of a node at root level that have
+    the same name as another level will start with a `|`.
+    """
     node1 = session.create_node("transform", name="A")
     node2 = session.create_node("transform", name="parent")
-    node3 = session.create_node("transform", name="A", parent=node2)
+    session.create_node("transform", name="A", parent=node2)
     assert node1.__melobject__() == "|A"
 
 

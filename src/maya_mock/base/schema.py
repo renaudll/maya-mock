@@ -1,7 +1,12 @@
+"""
+Schema related classes.
+A schema hold information about maya default state, including default node types.
+"""
 import copy
 import logging
+import json
 
-log = logging.getLogger(__name__)
+_LOG = logging.getLogger(__name__)
 
 
 def get_namespace_parent(namespace):
@@ -13,7 +18,7 @@ def get_namespace_parent(namespace):
     >>> get_namespace_parent('org') is None
     True
 
-    :param str namespace: The namespace to query.
+    :param str namespace: The namespace to namespace.
     :return: The parent namespace
     :rtype: str
     """
@@ -49,7 +54,7 @@ def iter_namespaces(namespaces):
     """
     known = set()
 
-    def subroutine(namespace):
+    def _subroutine(namespace):
         # Don't yield the same node twice
         if namespace in known:
             return
@@ -57,7 +62,7 @@ def iter_namespaces(namespaces):
         # Recursively yield parent first
         parent_namespace = get_namespace_parent(namespace)
         if parent_namespace:
-            for yielded in subroutine(parent_namespace):
+            for yielded in _subroutine(parent_namespace):
                 yield yielded
 
         # Yield
@@ -65,24 +70,32 @@ def iter_namespaces(namespaces):
         yield namespace
 
     for namespace in namespaces:
-        for yielded in subroutine(namespace):
+        for yielded in _subroutine(namespace):
             yield yielded
 
 
 class NodeTypeDef(object):
-    def __init__(self, namespace, data, classification, abstract=False, parent=None):
+    """
+    Object that hold information about a specific node type.
+    """
+
+    def __init__(
+        self, namespace, data, classification, abstract=False, parent=None
+    ):  # pylint: disable=too-many-arguments
         """
-        :param str node_type: The name of the node type (ex: 'transform')
+        :param str namespace: The node namespace.
+        ex: "containerBase.entity.dagNode.shape.camera"
         :param dict(str, dict) data: A dict(k,v) where:
         - k is a standard a port name for this type
         - v is a dict containing the necessary information to build this port
-        :param tuple(str) classification: The classification of the type as returned by cmds.getClassification.
+        :param tuple(str) classification: The classification of the type.
+        As returned by cmds.getClassification.
         """
         # Don't store the same attribute twice
         if parent:
             for key in parent.data.keys():
                 if key not in data:
-                    log.debug("Cannot find %r in %r" % (key, parent))
+                    _LOG.debug("Cannot find %r in %r", key, parent)
                     continue
                 data.pop(key)
 
@@ -97,10 +110,6 @@ class NodeTypeDef(object):
         return "<NodeTypeDef %r>" % self.type
 
     @property
-    def data_local(self):
-        return self._data
-
-    @property  # TODO: memoize
     def data(self):
         """
         Fully qualified dict of all the attributes associated with this node in the form of:
@@ -117,6 +126,7 @@ class NodeTypeDef(object):
         :return:
         :rtype: dict(str, dict)
         """
+        # TODO: memoize
         if self.parent:
             result = copy.copy(self._data)
             result.update(self.parent.data)
@@ -140,7 +150,7 @@ class NodeTypeDef(object):
         """
         return {
             "namespace": self.namespace,
-            "attributes": self.data_local,
+            "attributes": self._data,
             "classification": self.classification,
             "abstract": self.abstract,
         }
@@ -148,9 +158,11 @@ class NodeTypeDef(object):
     @classmethod
     def from_dict(cls, data):
         """
+        Construct an instance from a data dict.
 
-        :param dict data:
-        :return:
+        :param dict data: A dict
+        :return: An instance
+        :rtype: NodeTypeDef
         """
         namespace = data["namespace"]
         attributes = data["attributes"]
@@ -188,16 +200,35 @@ class MockedSessionSchema(object):
         """
         if node.type in self.nodes:
             raise Exception("Node type %r is already registered!" % node.type)
-            return
 
         self.nodes[node.type] = node
 
-    def get(self, node_type):  # TODO: rethink
+    def get(self, node_type):
+        """
+        Get the node definition for a specific type.
+
+        :param node_type: A node type
+        :return: A node definition or None if type is unknown
+        :rtype: NodeTypeDef or None
+        """
+        # TODO: rethink
         return self.nodes.get(node_type)
 
-    def get_node_by_namespace(self, query):
+    def get_node_by_namespace(self, namespace):
+        """
+        Get a node definition by it's namespace.
+
+        :param str namespace: The node namespace
+        :return: A node definition or None if namespace is unknown
+        :rtype: NodeTypeDef or None
+        """
         return next(
-            (node for namespace, node in self.nodes.items() if namespace == query), None
+            (
+                node
+                for namespace_, node in self.nodes.items()
+                if namespace == namespace_
+            ),
+            None,
         )
 
     def get_known_node_types(self):
@@ -207,49 +238,15 @@ class MockedSessionSchema(object):
         """
         return list(self.nodes.keys())
 
-    @classmethod
-    def generate(cls, fn_progress=None):
-        """
-        Generate a Schema instance by analysing the current session.
-
-        :return: A new Schema instance
-        :rtype: MockedSessionSchema
-        """
-        from maya import cmds
-        from maya_mock.base import _maya
-
-        # Determine empty scene default state
-        cmds.file(new=True, force=True)
-        default_state = {name: cmds.nodeType(name) for name in cmds.ls()}
-
-        inst = cls(default_state=default_state)
-
-        # Determine known nodes and their ports
-        node_types = cmds.allNodeTypes()
-
-        namespaces = sorted(
-            ".".join(_maya.get_node_type_namespace(node_type))
-            for node_type in node_types
-        )
-        for namespace in iter_namespaces(namespaces):
-            log.info("Registering %r" % namespace)
-            node_type = get_namespace_leaf(namespace)
-            parent_namespace = get_namespace_parent(namespace)
-            parent = (
-                inst.get_node_by_namespace(parent_namespace)
-                if parent_namespace
-                else None
-            )
-            data = _maya.get_node_attributes_info(node_type)
-            classification = _maya.get_node_classification(node_type)
-            node = NodeTypeDef(namespace, data, classification, parent=parent)
-            inst.register_node(node)
-
-        return inst
-
     # Serialization methods
 
     def to_dict(self):
+        """
+        Serialize the schema to a JSON compatible dict.
+
+        :return: A JSON compatible dict
+        :rtype dict
+        """
         return {
             "nodes": {
                 node_type: node_def.to_dict()
@@ -288,16 +285,20 @@ class MockedSessionSchema(object):
         :return: A new MockedSessionSchema instance
         :rtype: MockedSessionSchema
         """
-        import json
-
-        with open(path) as fp:
-            data = json.load(fp)
+        with open(path) as stream:
+            data = json.load(stream)
 
         return cls.from_dict(data)
 
     def to_json_file(self, path, indent=1, sort_keys=True, **kwargs):
-        import json
+        """
+        Export the schema to a json file.
 
+        :param str path: The path to the json file to save to
+        :param int indent: The indent to use. Default is 1
+        :param bool sort_keys: Should we sort the keys? Default is True
+        :param kwargs: Any keyword arguments are passed to `json.dump`
+        """
         data = self.to_dict()
-        with open(path, "w") as fp:
-            json.dump(data, fp, sort_keys=sort_keys, indent=indent, **kwargs)
+        with open(path, "w") as stream:
+            json.dump(data, stream, sort_keys=sort_keys, indent=indent, **kwargs)

@@ -1,4 +1,6 @@
-import os
+"""
+Registry of constant values
+"""
 from enum import Enum
 
 # These name are reserved and cannot be used as-is.
@@ -103,7 +105,8 @@ class EnumAttrTypes(Enum):
     polyFaces = "polyFaces"
 
 
-# Determine which type combination create unitConversion node and what is the conversionFactor value.
+# Determine which type combination create unitConversion node
+# and what is the conversionFactor value.
 # If a type is not here it won't create any unitConversion.
 CONVERSION_FACTOR_BY_TYPE = {
     (EnumAttrTypes.double, EnumAttrTypes.doubleAngle): 0.017453292519943295,
@@ -120,14 +123,3 @@ CONVERSION_FACTOR_BY_TYPE = {
     CONVERSION_FACTOR_BY_TYPE[key]: 1.0 / val
     for key, val in CONVERSION_FACTOR_BY_TYPE.items()
 }
-
-TEST_RESOURCE_DIR = os.path.abspath(
-    os.path.join(
-        os.path.dirname(__file__),
-        "..",  # base
-        "..",  # maya_mock
-        "..",  # python
-        "tests",
-        "resources",
-    )
-)

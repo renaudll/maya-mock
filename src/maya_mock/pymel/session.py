@@ -1,4 +1,8 @@
-"""Mocked for the pymel package."""
+"""
+Mocked for the pymel package.
+"""
+import six
+
 from maya_mock.cmds.session import MockedCmdsSession
 from maya_mock.pymel.node import MockedPymelNode
 from maya_mock.pymel.port import MockedPymelPort
@@ -22,10 +26,10 @@ class MockedPymelSession(MockedCmdsSession):
         self._registry = {}
 
         # pymel.core.PyNode
-        self.PyNode = MockedPymelNode
+        self.PyNode = MockedPymelNode  # pylint: disable=invalid-name
 
         # pymel.core.Attribute
-        self.Attribute = MockedPymelPort
+        self.Attribute = MockedPymelPort  # pylint: disable=invalid-name
 
         # Register all existing node
         for node in session.nodes:
@@ -65,13 +69,13 @@ class MockedPymelSession(MockedCmdsSession):
         :return: A MockedPymelNode
         :rtype: MockedPymelNode
         """
-        assert isinstance(val, basestring)
+        assert isinstance(val, six.string_types)
         node = self.session.get_node_by_match(val)
         if not node:
             return None
-        return self._node_to_pynode(node)
+        return self.node_to_pynode(node)
 
-    def _node_to_pynode(self, node):
+    def node_to_pynode(self, node):
         """
         Get a MockedPymelNode from an MockedNode instance.
 
@@ -80,63 +84,81 @@ class MockedPymelSession(MockedCmdsSession):
         :rtype: MockedPymelNode
         :raise KeyError: If the provided MockedNode is not registered.
         """
+        # TODO: Make private
         return self._registry[node]
 
-    def _port_to_attribute(self, port):
+    def port_to_attribute(self, port):
         """
         Get a MockedPymelPort from a MockedPort instance.
         :param port:
         :return:
         """
+        # TODO: Make private
         return self._registry[port]
 
-    def _to_mel(self, data):
+    def ls(self, *args, **kwargs):  # pylint: disable=arguments-differ
         """
-        Convert a MockedPymelNode to a fully qualified dagpath.
-
-        :param MockedPymelNode data: A PyNode-like object.
-        :return: A fully qualified dagpath.
-        :rtype: str
+        :param tuple args: Positional arguments are passed to the session
+        :param dict kwargs: Keyword arguments are passed to the session
+        :return: A list of mocked pynode
+        :rtype: list[maya_mock.MockedPymelNode]
         """
-        try:
-            return data.__melobject__()
-        except AttributeError:
-            return data
-
-    def ls(self, *args, **kwargs):
         nodes = super(MockedPymelSession, self).ls(*args, **kwargs)
         return [self._str_to_pynode(node) for node in nodes]
 
-    def objExists(self, args):
-        names = [str(arg) for arg in args]
-        return self.session.node_exist(names)
-
-    def createNode(self, *args, **kwargs):
+    def createNode(self, *args, **kwargs):  # pylint: disable=arguments-differ
+        """
+        :param args: Positional arguments are fowarded to the parent implementation
+        :param kwargs: Keyword arguments are fowarded to the parent implementation
+        :return: A mocked pynode
+        :rtype: MockedPymelNode
+        """
         node = super(MockedPymelSession, self).createNode(*args, **kwargs)
         return self._str_to_pynode(node)
 
-    def listAttr(self, objects):
-        attrs = super(MockedPymelSession, self).listAttr(objects)
+    def listAttr(self, objects, **kwargs):  # pylint: disable=arguments-differ
+        """
+        :param tuple[str] objects: Objects to list attributes from
+        :return: A list of attribute names
+        :rtype: list[str]
+        """
+        attrs = super(MockedPymelSession, self).listAttr(objects, **kwargs)
         return [MockedPymelPort(self, attr) for attr in attrs]
 
-    def addAttr(self, *objects, **kwargs):
-        objects = [self._to_mel(object) for object in objects]
+    def addAttr(self, *objects, **kwargs):  # pylint: disable=arguments-differ
+        objects = [_to_mel(object_) for object_ in objects]
         super(MockedPymelSession, self).addAttr(*objects, **kwargs)
 
-    def select(self, names):
-        super(MockedPymelSession, self).select(names)
-        return self.ls(selection=True)
+    def select(self, names, **kwargs):  # pylint: disable=arguments-differ
+        super(MockedPymelSession, self).select(names, **kwargs)
+        return self.ls(
+            selection=True
+        )  # TODO: Validate cmds really don't return anything
 
-    def parent(self, *dagnodes, **kwargs):
-        names = [self._to_mel(node) for node in dagnodes]
+    def parent(self, *objects, **kwargs):  # pylint: disable=arguments-differ
+        names = [_to_mel(object_) for object_ in objects]
         super(MockedPymelSession, self).parent(*names, **kwargs)
 
-    def connectAttr(self, src, dst, **kwargs):
-        src = self._to_mel(src)
-        dst = self._to_mel(dst)
+    def connectAttr(self, src, dst, **kwargs):  # pylint: disable=arguments-differ
+        src = _to_mel(src)
+        dst = _to_mel(dst)
         super(MockedPymelSession, self).connectAttr(src, dst, **kwargs)
 
-    def disconnectAttr(self, src, dst, **kwargs):
-        src = self._to_mel(src)
-        dst = self._to_mel(dst)
+    def disconnectAttr(self, src, dst, **kwargs):  # pylint: disable=arguments-differ
+        src = _to_mel(src)
+        dst = _to_mel(dst)
         super(MockedPymelSession, self).disconnectAttr(src, dst, **kwargs)
+
+
+def _to_mel(data):
+    """
+    Convert a MockedPymelNode to a fully qualified dagpath.
+
+    :param MockedPymelNode data: A PyNode-like object.
+    :return: A fully qualified dagpath.
+    :rtype: str
+    """
+    try:
+        return data.__melobject__()
+    except AttributeError:
+        return data

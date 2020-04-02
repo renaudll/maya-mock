@@ -1,5 +1,10 @@
+"""
+Decorators
+"""
 import sys
 from contextlib import contextmanager
+
+import mock
 
 from maya_mock.cmds import MockedCmdsSession
 from maya_mock.pymel import MockedPymelSession, MockedPymelNode, MockedPymelPort
@@ -34,8 +39,6 @@ def _create_cmds_module_mock(cmds):
     """
     Create a MagicMock for the cmds module.
     """
-    import mock
-
     kwargs = {"cmds": cmds}
     module_maya = mock.MagicMock(**kwargs)
     return module_maya
@@ -71,9 +74,13 @@ def mock_cmds(session):
 
 
 def _create_pymel_module_mock(pymel):
-    # kwargs = {'core': pymel}
-    import mock
+    """
+    Create a pymel module mock from a mocked pymel session.
 
+    :param MockedPymelSession pymel: A mocked pymel session
+    :return: A MagicMock
+    :rtype: mock.MagicMock
+    """
     kwargs = {
         "core.PyNode": MockedPymelNode,
         "core.Attribute": MockedPymelPort,
@@ -102,8 +109,6 @@ def mock_pymel(session):
     :return: A context
     :rtype: contextmanager.GeneratorContextManager
     """
-    # Context manager that ensure that when trying to import pymel it import a mock.
-    # Useful when using external methods that don't expect the mock.
     pymel = (
         session
         if isinstance(session, MockedPymelSession)
