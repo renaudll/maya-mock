@@ -40,7 +40,7 @@ See the `tox.ini` file for the available targets.
 tox -e unit-py2.7
 ```
 
-You can also pass arguments to your tests with the `--` flag.
+You can also pass additional arguments to your tests with the `--` flag.
 For example, here's how to run a single test named `test_node_shape_transform_melobject` in python-2.7:
 
 ```bash

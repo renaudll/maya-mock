@@ -24,7 +24,9 @@ class MockedPymelNode(object):
         return self.__melobject__()
 
     def __repr__(self):
-        return "nt.%s(%r)" % (self._node.type.title(), self._node.name)
+        # We use the `u` prefix as we don't know yet
+        # what this will be in a python-3 based maya.
+        return "nt.%s(u%r)" % (self._node.type.title(), str(self._node.name))
 
     def __getattr__(self, item):
         """

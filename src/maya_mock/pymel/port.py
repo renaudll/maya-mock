@@ -20,7 +20,9 @@ class MockedPymelPort(object):
         return self.__melobject__()
 
     def __repr__(self):
-        return "Attribute(%r)" % self.__melobject__()
+        # We use the `u` prefix as we don't know yet
+        # what this will be in a python-3 based maya.
+        return "Attribute(u%r)" % str(self.__melobject__())
 
     def __melobject__(self):
         return u"{}.{}".format(self._port.node.__melobject__(), self._port.name)

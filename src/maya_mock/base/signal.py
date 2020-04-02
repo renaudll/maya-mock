@@ -64,9 +64,6 @@ class Signal(object):
         self.block(True)
         try:
             for func in self._funcs:
-                LOG.debug(
-                    " Calling %s.%s", func.im_class.__name__, func.im_func.__name__
-                )
                 func(*args, **kwargs)
         finally:
             self._mutex.release()
