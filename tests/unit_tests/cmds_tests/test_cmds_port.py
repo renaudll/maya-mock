@@ -42,14 +42,14 @@ def test_deleteAttr_missing_attribute_parameter(cmds, node):  # pylint: disable=
     """Ensure we raise if we try to delete an attribute but don't provide it's name."""
     with pytest.raises(RuntimeError) as exception:
         cmds.deleteAttr("transform1")
-    assert exception.match("foo")
+    assert exception.match("Must specify attribute to be deleted.\n")
 
 
 def test_deleteAttr_missing(cmds, node):  # pylint: disable=invalid-name
     """Ensure we raise if we try to delete an attribute that don't exist."""
     with pytest.raises(RuntimeError) as exception:
         cmds.deleteAttr(node, attribute="foo")
-    assert exception.match("No object matches name: transform1.foo")
+    assert exception.match("Node 'transform1' does not have attribute 'foo'.\n")
 
 
 def test_deleteAttr_by_path(cmds, node):  # pylint: disable=invalid-name

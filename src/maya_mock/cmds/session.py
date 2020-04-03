@@ -209,15 +209,19 @@ class MockedCmdsSession(object):
         self.session.remove_connection(connection)
 
     @handle_arguments(attribute="at")
-    def deleteAttr(self, query, attribute=None):  # pylint: disable=invalid-name
+    def deleteAttr(self, node, attribute=None):  # pylint: disable=invalid-name
         """
         Delete an attribute (port).
 
         https://download.autodesk.com/us/maya/2010help/CommandsPython/deleteAttr.html
+
+        :param str: A node name of an attribute path
+        :param str: An attribute name
+        :raises RuntimeError: If the attribute was not found.
         """
         # If the provided value match a specific port, delete it.
         try:
-            port = self.session.get_port_by_match(query)
+            port = self.session.get_port_by_match(node)
         except LookupError:
             pass
         else:
@@ -225,11 +229,14 @@ class MockedCmdsSession(object):
             return
 
         if not attribute:
-            raise RuntimeError("Must specify attribute to be deleted.")
+            raise RuntimeError("Must specify attribute to be deleted.\n")
 
-        query = ".".join((query, attribute))
-        # TODO: What happen if port is not found?
-        port = self.session.get_port_by_match(query)
+        query = ".".join((node, attribute))
+        try:
+            port = self.session.get_port_by_match(query)
+        except LookupError:
+            raise RuntimeError("Node %r does not have attribute %r.\n" % (node, attribute))
+
         self.session.remove_port(port)
 
     @handle_arguments()
