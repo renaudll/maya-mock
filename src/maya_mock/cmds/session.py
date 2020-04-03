@@ -219,17 +219,18 @@ class MockedCmdsSession(object):
         :param str: An attribute name
         :raises RuntimeError: If the attribute was not found.
         """
-        # If the provided value match a specific port, delete it.
-        try:
-            port = self.session.get_port_by_match(node)
-        except LookupError:
-            pass
-        else:
-            self.session.remove_port(port)
-            return
-
         if not attribute:
-            raise RuntimeError("Must specify attribute to be deleted.\n")
+            # If the provided value match a specific port, delete it.
+            if "." not in node:  # TODO: Use _naming?
+                raise RuntimeError("Must specify attribute to be deleted.\n")
+
+            try:
+                port = self.session.get_port_by_match(node)
+            except LookupError:
+                raise ValueError("No object matches name: transform1.foo")
+            else:
+                self.session.remove_port(port)
+                return
 
         query = ".".join((node, attribute))
         try:
