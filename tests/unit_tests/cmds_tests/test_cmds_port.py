@@ -66,7 +66,9 @@ def test_deleteAttr_invalid_path(cmds, node):  # pylint: disable=invalid-name
     assert exception.match("No object matches name: transform1.foo")
 
 
-def test_deleteAttr_valid_path_and_invalid_attribute(cmds, node):  # pylint: disable=invalid-name
+def test_deleteAttr_valid_path_and_invalid_attribute(
+    cmds, node
+):  # pylint: disable=invalid-name
     """Ensure if we provide an attribute path and an attribute name, the attribute name is used."""
     cmds.addAttr(node, longName="foo")
     with pytest.raises(RuntimeError) as exception:
@@ -74,7 +76,9 @@ def test_deleteAttr_valid_path_and_invalid_attribute(cmds, node):  # pylint: dis
     assert exception.match("Node 'transform1' does not have attribute 'bar'.")
 
 
-def test_deleteAttr_invalid_path_and_valid_attribute(cmds, node):  # pylint: disable=invalid-name
+def test_deleteAttr_invalid_path_and_valid_attribute(
+    cmds, node
+):  # pylint: disable=invalid-name
     """"""
     cmds.addAttr(node, longName="foo")
     with pytest.raises(ValueError) as exception:

@@ -40,14 +40,14 @@ class MockedPymelNode(object):
         session = self.__session
         pymel = self.__pymel
 
-        port = session.get_node_port_by_name(self._node, item)
-        if port:
-            mock = pymel.port_to_attribute(port)
-            return mock
+        try:
+            port = session.get_node_port_by_name(self._node, item)
+        except LookupError:
+            raise AttributeError(
+                "{} has no attribute or method named '{}'".format(self, item)
+            )
 
-        raise AttributeError(
-            "{} has no attribute or method named '{}'".format(self, item)
-        )
+        return pymel.port_to_attribute(port)
 
     def __melobject__(self):
         return self._node.__melobject__()
@@ -60,6 +60,7 @@ class MockedPymelNode(object):
         :return: A mocked pymel attribute
         :rtype: maya_mock.MockedPymelPort
         """
+        # TODO: What happen if the attr don't exist?
         session = self.__session
         pymel = self.__pymel
 
@@ -74,6 +75,7 @@ class MockedPymelNode(object):
         :return: The value of the attribute.
         :rtype: bool
         """
+        # TODO: What happen if the attr don't exist?
         session = self.__session
         port = session.get_node_port_by_name(self._node, name)
         return port.value
@@ -94,10 +96,18 @@ class MockedPymelNode(object):
         # If the node is a tranform and checkShape is True, also check it's shape.
         if self._node.type == "transform" and checkShape:
             for shape in self.getShapes():
-                if session.get_node_port_by_name(shape, name):
-                    return True
+                try:
+                    session.get_node_port_by_name(shape, name)
+                except LookupError:
+                    continue
 
-        return session.get_node_port_by_name(self._node, name) is not None
+                return True
+
+        try:
+            session.get_node_port_by_name(self._node, name)
+        except LookupError:
+            return False
+        return True
 
     def name(self):
         """

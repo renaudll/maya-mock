@@ -418,8 +418,9 @@ class MockedSession(
 
         :param MockedNode node: The node to namespace.
         :param str name: The desired port name.
-        :return: A port matching the requirements. None if nothing is found.
-        :rtype: MockedPort or None
+        :return: A port matching the requirements
+        :rtype: MockedPort
+        :raises LookupError: If the port don't exist.
         """
         assert isinstance(node, MockedNode)
         assert isinstance(name, six.string_types)
@@ -431,7 +432,8 @@ class MockedSession(
                 return port
             if port.nice_name == name:
                 return port
-        return None
+
+        raise LookupError(node, name)
 
     def port_is_source(self, port):
         """

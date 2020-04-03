@@ -220,39 +220,33 @@ class MockedCmdsSession(object):
         :param str: An attribute name
         :raises RuntimeError: If the attribute was not found.
         """
+        # Backup the original asked name, we need to re-use it in error message.
+        query = node
+
         # In all case, maya will raise a ValueError if the node or path don't exist.
         try:
-            self.session.get_port_by_match(node)
+            node = self.session.get_node_by_name(node)
         except LookupError:
             try:
-                self.session.get_node_by_name(node)
+                node = self.session.get_port_by_match(node).node
             except LookupError:
                 raise ValueError("No object matches name: %s" % node)
 
-        if attribute:
-            node_name = node.split(".")[0]
-            node = self.session.get_node_by_name(node_name)  # TODO: Use _naming
-
+        if attribute is None:
+            try:
+                port = self.session.get_port_by_match(query)
+            except LookupError:
+                raise RuntimeError("Must specify attribute to be deleted.\n")
+        else:
             try:
                 port = self.session.get_node_port_by_name(node, attribute)
-                if not port:
-                    raise LookupError(attribute)
             except LookupError:
-                raise RuntimeError("Node %r does not have attribute %r.\n" % (str(node_name), attribute))
-            else:
-                self.session.remove_port(port)
-                return
+                raise RuntimeError(
+                    "Node %r does not have attribute %r.\n"
+                    % (str(node.name), attribute)
+                )
 
-        if "." in node:  # TODO: Use _naming
-            try:
-                port = self.session.get_port_by_match(node)
-            except LookupError:
-                raise ValueError("No object matches name: %s" % str(node))
-            else:
-                self.session.remove_port(port)
-                return
-
-        raise RuntimeError("Must specify attribute to be deleted.\n")
+        self.session.remove_port(port)
 
     @handle_arguments()
     def getAttr(self, dagpath):  # pylint: disable=invalid-name
