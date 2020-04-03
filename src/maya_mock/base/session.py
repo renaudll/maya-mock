@@ -125,13 +125,14 @@ class MockedSession(
         Note that multiple nodes can have the same name.
 
         :param str name: The name of the MockedNode.
-        :return: A node or None if no match was found.
-        :rtype: MockedNode or None
+        :return: A mocked node
+        :rtype: MockedNode
+        :raises LookupError: If no node is found
         """
         for node in self.nodes:
             if node.name == name:
                 return node
-        return None
+        raise LookupError(name)
 
     def get_nodes_by_match(self, pattern, strict=True):
         """

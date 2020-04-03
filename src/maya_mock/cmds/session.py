@@ -183,6 +183,7 @@ class MockedCmdsSession(object):
 
         :param str name: A pattern defining what to delete.
         """
+        # TODO: What happen if the node don't exit?
         node = self.session.get_node_by_name(name)
         self.session.remove_node(node)
 
@@ -219,26 +220,39 @@ class MockedCmdsSession(object):
         :param str: An attribute name
         :raises RuntimeError: If the attribute was not found.
         """
-        if not attribute:
-            # If the provided value match a specific port, delete it.
-            if "." not in node:  # TODO: Use _naming?
-                raise RuntimeError("Must specify attribute to be deleted.\n")
+        # In all case, maya will raise a ValueError if the node or path don't exist.
+        try:
+            self.session.get_port_by_match(node)
+        except LookupError:
+            try:
+                self.session.get_node_by_name(node)
+            except LookupError:
+                raise ValueError("No object matches name: %s" % node)
+
+        if attribute:
+            node_name = node.split(".")[0]
+            node = self.session.get_node_by_name(node_name)  # TODO: Use _naming
 
             try:
-                port = self.session.get_port_by_match(node)
+                port = self.session.get_node_port_by_name(node, attribute)
+                if not port:
+                    raise LookupError(attribute)
             except LookupError:
-                raise ValueError("No object matches name: transform1.foo")
+                raise RuntimeError("Node %r does not have attribute %r.\n" % (str(node_name), attribute))
             else:
                 self.session.remove_port(port)
                 return
 
-        query = ".".join((node, attribute))
-        try:
-            port = self.session.get_port_by_match(query)
-        except LookupError:
-            raise RuntimeError("Node %r does not have attribute %r.\n" % (node, attribute))
+        if "." in node:  # TODO: Use _naming
+            try:
+                port = self.session.get_port_by_match(node)
+            except LookupError:
+                raise ValueError("No object matches name: %s" % str(node))
+            else:
+                self.session.remove_port(port)
+                return
 
-        self.session.remove_port(port)
+        raise RuntimeError("Must specify attribute to be deleted.\n")
 
     @handle_arguments()
     def getAttr(self, dagpath):  # pylint: disable=invalid-name
@@ -339,6 +353,7 @@ class MockedCmdsSession(object):
         :return: The type of the node.
         :rtype: bool
         """
+        # TODO: What happen if the node don't exist?
         node = self.session.get_node_by_name(name)
         return node.type
 
@@ -408,8 +423,9 @@ class MockedCmdsSession(object):
             parent = objects[-1]
 
         # Convert to our internal datatype
+        # TODO: What happen if the parent or children don't exist?
         children = [self.session.get_node_by_name(child) for child in children]
-        parent = self.session.get_node_by_name(parent)
+        parent = self.session.get_node_by_name(parent) if parent is not None else None
 
         for child in children:
             child.set_parent(parent)
