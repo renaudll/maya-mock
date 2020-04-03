@@ -73,9 +73,10 @@ class MockedSession(
         return len(self.nodes)
 
     def __getitem__(self, item):
-        port = self.get_port_by_match(item)
-        if port:
-            return port
+        try:
+            return self.get_port_by_match(item)
+        except LookupError:
+            pass
 
         node = self.get_node_by_match(item)
         if node:
@@ -188,13 +189,14 @@ class MockedSession(
         Note that multiple ports can match a same pattern.
 
         :param str pattern: The pattern to match.
-        :return: A port or None if no match was found.
-        :rtype: MockedPort or None
+        :return: A port
+        :rtype: MockedPort
+        :raises LookupError: If no port was found.
         """
         for port in self.ports:
             if port.match(pattern):
                 return port
-        return None
+        raise LookupError(pattern)
 
     def get_connection_by_ports(self, src, dst):
         """

@@ -15,9 +15,7 @@ class MockedCmdsSession(object):
         """
         :param MockedSession session: The mocked session for this adaptor.
         """
-        if session is None:
-            session = MockedSession()
-        self._session = session
+        self._session = session or MockedSession()
 
     @property
     def session(self):
@@ -28,12 +26,14 @@ class MockedCmdsSession(object):
         return self._session
 
     def _conform_connection_ports(self, src, dst):
-        port_src = self.session.get_port_by_match(src)
-        if port_src is None:
+        try:
+            port_src = self.session.get_port_by_match(src)
+        except LookupError:
             raise RuntimeError("The source attribute %r cannot be found." % src)
 
-        port_dst = self.session.get_port_by_match(dst)
-        if port_dst is None:
+        try:
+            port_dst = self.session.get_port_by_match(dst)
+        except LookupError:
             raise RuntimeError("The destination attribute %r cannot be found." % dst)
 
         return port_src, port_dst
@@ -130,6 +130,7 @@ class MockedCmdsSession(object):
            A string list When asking for a list of plugs.
         :rtype: bool or str or list(str)
         """
+        # TODO: What happen if no port is found?
         port = self.session.get_port_by_match(dagpath)
 
         if sourceFromDestination and not destinationFromSource:
@@ -207,25 +208,29 @@ class MockedCmdsSession(object):
 
         self.session.remove_connection(connection)
 
-    @redirect_method_args_to_arg
     @handle_arguments(attribute="at")
-    def deleteAttr(self, queries, attribute=None):  # pylint: disable=invalid-name
+    def deleteAttr(self, query, attribute=None):  # pylint: disable=invalid-name
         """
         Delete an attribute (port).
 
         https://download.autodesk.com/us/maya/2010help/CommandsPython/deleteAttr.html
         """
-        # TODO: What happen when attribute is not provided?
-        for query in queries:
-            # If the provided value match a specific port, delete it.
+        # If the provided value match a specific port, delete it.
+        try:
             port = self.session.get_port_by_match(query)
-            if port:
-                self.session.remove_port(port)
-                continue
-
-            query = ".".join((query, attribute))
-            port = self.session.get_port_by_match(query)
+        except LookupError:
+            pass
+        else:
             self.session.remove_port(port)
+            return
+
+        if not attribute:
+            raise RuntimeError("Must specify attribute to be deleted.")
+
+        query = ".".join((query, attribute))
+        # TODO: What happen if port is not found?
+        port = self.session.get_port_by_match(query)
+        self.session.remove_port(port)
 
     @handle_arguments()
     def getAttr(self, dagpath):  # pylint: disable=invalid-name
@@ -238,8 +243,9 @@ class MockedCmdsSession(object):
         :return: The value associated with that attribute.
         :rtype: bool
         """
-        port = self.session.get_port_by_match(dagpath)
-        if port is None:
+        try:
+            port = self.session.get_port_by_match(dagpath)
+        except LookupError:
             raise ValueError("No object matches name: %s" % dagpath)
         return port.value
 
@@ -338,9 +344,14 @@ class MockedCmdsSession(object):
         :return: True if an existing object match the provided pattern, False otherwise.
         :rtype: bool
         """
-        return self.session.node_exist(pattern) or bool(
+        try:
             self.session.get_port_by_match(pattern)
-        )
+        except LookupError:
+            pass
+        else:
+            return True
+
+        return self.session.node_exist(pattern)
 
     @handle_arguments()
     def select(self, names):
@@ -366,6 +377,7 @@ class MockedCmdsSession(object):
         :param str dagpath: The dagpath to an attribute.
         :param object value: The new value of the attribute.
         """
+        # TODO: What happen if port is not found?
         port = self.session.get_port_by_match(dagpath)
         port.value = value
 

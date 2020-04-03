@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+"""
+maya_mock package definition
+"""
 
 from setuptools import setup, find_packages
 
@@ -12,7 +15,10 @@ setup(
     packages=find_packages(where="src"),
     package_dir={"": "src"},
     install_requires=["enum; python_version < '3.0'", "six", "mock"],
-    extras_require={"test": ["pytest", "pytest-cov", "coverage", "hypothesis"]},
+    extras_require={
+        "test": ["pytest", "pytest-cov", "coverage", "hypothesis"],
+        "doc": ["sphinx", "sphinx-rtd-theme"],
+    },
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Intended Audience :: Developers",
