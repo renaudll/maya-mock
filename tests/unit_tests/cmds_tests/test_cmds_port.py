@@ -38,7 +38,8 @@ def test_deleteAttr(cmds, node):  # pylint: disable=invalid-name
     assert not cmds.objExists("transform1.foo")
 
 
-def test_deleteAttr_missing_attribute_arg(cmds, node):  # pylint: disable=invalid-name
+@pytest.mark.usefixtures("node")
+def test_deleteAttr_missing_attribute_arg(cmds):  # pylint: disable=invalid-name
     """Ensure we raise if we try to delete an attribute but don't provide it's name."""
     with pytest.raises(RuntimeError) as exception:
         cmds.deleteAttr("transform1")
@@ -59,7 +60,8 @@ def test_deleteAttr_valid_path(cmds, node):  # pylint: disable=invalid-name
     assert not cmds.objExists("transform1.foo")
 
 
-def test_deleteAttr_invalid_path(cmds, node):  # pylint: disable=invalid-name
+@pytest.mark.usefixtures("node")
+def test_deleteAttr_invalid_path(cmds):  # pylint: disable=invalid-name
     """Ensure we raise if we try to delete an attribute by a missing path."""
     with pytest.raises(ValueError) as exception:
         cmds.deleteAttr("transform1.foo")
@@ -79,7 +81,7 @@ def test_deleteAttr_valid_path_and_invalid_attribute(
 def test_deleteAttr_invalid_path_and_valid_attribute(
     cmds, node
 ):  # pylint: disable=invalid-name
-    """"""
+    """Ensure we raise if we provide a valid attribute and an invalid path."""
     cmds.addAttr(node, longName="foo")
     with pytest.raises(ValueError) as exception:
         cmds.deleteAttr("transform1.bar", attribute="foo")
@@ -92,7 +94,8 @@ def test_getAttr_default_value(cmds, node):  # pylint: disable=invalid-name
     assert cmds.getAttr("transform1.foo") == 1.0
 
 
-def test_getAttr_invalid_path(cmds, node):  # pylint: disable=invalid-name
+@pytest.mark.usefixtures("node")
+def test_getAttr_invalid_path(cmds):  # pylint: disable=invalid-name
     """Ensure we fail the same way as Maya when calling getAttr with a non-existent dag path."""
     with pytest.raises(ValueError) as exception:
         cmds.getAttr("transform1.a_missing_attribute")

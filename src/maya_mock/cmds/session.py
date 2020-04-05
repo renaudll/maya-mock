@@ -130,8 +130,10 @@ class MockedCmdsSession(object):
            A string list When asking for a list of plugs.
         :rtype: bool or str or list(str)
         """
-        # TODO: What happen if no port is found?
-        port = self.session.get_port_by_match(dagpath)
+        try:
+            port = self.session.get_port_by_match(dagpath)
+        except LookupError:
+            raise ValueError("No object matches name: %s" % dagpath)
 
         if sourceFromDestination and not destinationFromSource:
             return next(
@@ -153,8 +155,8 @@ class MockedCmdsSession(object):
 
         raise RuntimeError("You must specify exactly one flag.")
 
-    @handle_arguments()
-    def connectAttr(self, src, dst):  # pylint: disable=invalid-name
+    @handle_arguments(force="f")
+    def connectAttr(self, src, dst, force=False):  # pylint: disable=invalid-name
         """
         Create a connection
 
@@ -162,17 +164,27 @@ class MockedCmdsSession(object):
 
         :param str src: The connection source port.
         :param str dst: The connection destination port.
+        :param bool force: If the destination is already connected, the old connection is broken.
         """
-        # TODO: Add force flag
         src, dst = self._conform_connection_ports(src, dst)
 
-        connection = self.session.get_connection_by_ports(src, dst)
+        connection = next(iter(self.session.get_port_input_connections(dst)), None)
         if connection:
-            # This also raise this warning to the script editor:
-            self.warning("%r is already connected to %r." % (src, dst))
-            raise RuntimeError("Maya command error")
+            if force:
+                self.session.remove_connection(connection)
+            else:
+                # This also raise this warning to the script editor:
+                self.warning("%r is already connected to %r." % (src, dst))
+                raise RuntimeError("Maya command error")
 
         self.session.create_connection(src, dst)
+        # TODO: Simplify
+        return u"Connected %s.%s to %s.%s." % (
+            src.node.name,
+            src.name,
+            dst.node.name,
+            dst.name,
+        )
 
     @handle_arguments()
     def delete(self, name):

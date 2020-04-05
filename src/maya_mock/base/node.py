@@ -96,19 +96,6 @@ class MockedNode(_abstract.BaseDagObject):
             parent.children.add(self)
         self._parent = parent
 
-    def get_port_by_name(self, name):
-        """
-        Query a specific node port by it's name.
-        :param str name: The name of the port to search.
-        :return: A Port if a match is found. Return None otherwise.
-        :rtype: maya_mock.MockedPort or None
-        """
-        # TODO: Deprecate? This should be called forom the session
-        for port in self.ports:
-            if port.name == name:
-                return port
-        return None
-
     def is_shape(self):
         """
         Determine if the current node instance if a shape.

@@ -460,6 +460,7 @@ class MockedSession(
         :return: A set of mocked connections
         :rtype: Set[MockedConnection]
         """
+        # TODO: This should return only one port
         return {connection for connection in self.connections if connection.dst is port}
 
     def get_port_output_connections(self, port):

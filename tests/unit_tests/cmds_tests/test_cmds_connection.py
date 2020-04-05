@@ -64,7 +64,7 @@ def test_connectAttr(cmds):  # pylint: disable=invalid-name
     node = cmds.createNode("transform")
     cmds.addAttr(node, longName="src")
     cmds.addAttr(node, longName="dst")
-    cmds.connectAttr("transform1.src", "transform1.dst")
+    result = cmds.connectAttr("transform1.src", "transform1.dst")
 
     assert cmds.connectionInfo("transform1.src", destinationFromSource=True) == [
         "transform1.dst"
@@ -75,6 +75,7 @@ def test_connectAttr(cmds):  # pylint: disable=invalid-name
         == "transform1.src"
     )
     assert cmds.connectionInfo("transform1.dst", destinationFromSource=True) == []
+    assert result == u"Connected transform1.src to transform1.dst."
 
 
 def test_connectAttr_missing_src(cmds):  # pylint: disable=invalid-name
@@ -105,10 +106,7 @@ def test_connectAttr_missing_dst(cmds):  # pylint: disable=invalid-name
 
 
 def test_connectAttr_existing_connection(cmds):  # pylint: disable=invalid-name
-    """
-    Ensure that trying to create a connection
-    using already connection nodes raise a RuntimeError.
-    """
+    """Ensure that trying to create a connection over an existing one raise a RuntimeError."""
     node = cmds.createNode("transform")
     cmds.addAttr(node, longName="src")
     cmds.addAttr(node, longName="dst")
@@ -116,6 +114,31 @@ def test_connectAttr_existing_connection(cmds):  # pylint: disable=invalid-name
     with pytest.raises(RuntimeError) as exception:
         cmds.connectAttr("transform1.src", "transform1.dst")
     assert exception.match("Maya command error")
+
+
+def test_connectAttr_force(cmds):  # pylint: disable=invalid-name
+    """Ensure that trying to create a over an existing one can be forced."""
+    node = cmds.createNode("transform")
+    cmds.addAttr(node, longName="src_old")
+    cmds.addAttr(node, longName="src_new")
+    cmds.addAttr(node, longName="dst")
+    cmds.connectAttr("transform1.src_old", "transform1.dst")
+
+    cmds.connectAttr("transform1.src_new", "transform1.dst", force=True)
+
+    assert cmds.connectionInfo("transform1.src_old", destinationFromSource=True) == []
+    assert cmds.connectionInfo("transform1.src_old", sourceFromDestination=True) == ""
+
+    assert cmds.connectionInfo("transform1.src_new", destinationFromSource=True) == [
+        "transform1.dst"
+    ]
+    assert cmds.connectionInfo("transform1.src_new", sourceFromDestination=True) == ""
+
+    assert (
+        cmds.connectionInfo("transform1.dst", sourceFromDestination=True)
+        == "transform1.src_new"
+    )
+    assert cmds.connectionInfo("transform1.dst", destinationFromSource=True) == []
 
 
 def test_connectAttr_incompatible_ports(cmds):  # pylint: disable=invalid-name
@@ -141,6 +164,15 @@ def test_disconnectAttr(cmds):  # pylint: disable=invalid-name
     assert cmds.connectionInfo("transform1.src", sourceFromDestination=True) == ""
     assert cmds.connectionInfo("transform1.dst", sourceFromDestination=True) == ""
     assert cmds.connectionInfo("transform1.dst", destinationFromSource=True) == []
+
+
+def test_connectionInfo_invalid_attr(cmds):  # pylint: disable=invalid-name
+    """Ensure connectionInfo raise if the port don't exist."""
+    with pytest.raises(ValueError) as exception:
+        cmds.connectionInfo("transform.attribute_that_dont_exist")
+    assert exception.match(
+        "No object matches name: transform.attribute_that_dont_exist"
+    )
 
 
 @pytest.mark.usefixtures("connection")

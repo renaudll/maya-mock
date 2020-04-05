@@ -211,7 +211,6 @@ class MockedSessionSchema(object):
         :return: A node definition or None if type is unknown
         :rtype: NodeTypeDef or None
         """
-        # TODO: rethink
         return self.nodes.get(node_type)
 
     def get_node_by_namespace(self, namespace):
